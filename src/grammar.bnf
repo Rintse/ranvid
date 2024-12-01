@@ -1,0 +1,43 @@
+-- To be processed into a parser and lexer using BNFC
+
+entrypoints Exp;
+comment     "#" ;
+
+-- Tokens
+token       Conj    ('∧' | 'a''n''d') ;
+token       Disj    ('∨' | 'o''r') ;
+token       TNot    ('¬' | '!') ;
+token       TEq     ('⩵' | '=''=') ;
+token       TNeq    ('≠' | '!''=') ;
+token       TLeq    ('≤' | '<''=') ;
+token       TGeq    ('≥' | '>''=') ;
+
+BTrue.      BConst  ::= "true" ;
+BFalse.     BConst  ::= "false" ;
+
+Var.        Exp8   ::= Ident ;
+DVal.       Exp8   ::= Double ;
+BVal.       Exp8   ::= BConst ;
+Rand.       Exp8   ::= "rand" ;
+
+Min.        Exp7    ::= "-" Exp8 ;
+Pow.        Exp7    ::= Exp7 "^" Exp8 ;
+Mul.        Exp6    ::= Exp6 "*" Exp7 ;
+Div.        Exp6    ::= Exp6 "/" Exp7 ;
+Mod.        Exp6    ::= Exp6 "%" Exp7 ;
+Add.        Exp5    ::= Exp5 "+" Exp6 ;
+Sub.        Exp5    ::= Exp5 "-" Exp6 ;
+
+Eq.         Exp4    ::= Exp4 TEq Exp5 ;
+Lt.         Exp4    ::= Exp4 "<" Exp5 ;
+Gt.         Exp4    ::= Exp4 ">" Exp5 ;
+Neq.        Exp4    ::= Exp4 TNeq Exp5 ;
+Leq.        Exp4    ::= Exp4 TLeq Exp5 ;
+Geq.        Exp4    ::= Exp4 TGeq Exp5 ;
+
+Not.        Exp3    ::= TNot Exp4 ;
+And.        Exp2    ::= Exp2 Conj Exp3 ;
+Or.         Exp2    ::= Exp2 Disj Exp3 ;
+
+Ite.        Exp1    ::= "if" Exp2 "then" Exp2 "else" Exp2 ;
+Triple.     Exp     ::= "(" Exp "," Exp "," Exp ")" ;
