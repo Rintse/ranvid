@@ -146,7 +146,6 @@ instance Print Syntax.Grammar.Abs.Exp where
     Syntax.Grammar.Abs.Pow exp1 exp2 -> prPrec i 3 (concatD [prt 3 exp1, doc (showString "^"), prt 4 exp2])
     Syntax.Grammar.Abs.Mul exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "*"), prt 3 exp2])
     Syntax.Grammar.Abs.Div exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "/"), prt 3 exp2])
-    Syntax.Grammar.Abs.Mod exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "%"), prt 3 exp2])
     Syntax.Grammar.Abs.Add exp1 exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "+"), prt 2 exp2])
     Syntax.Grammar.Abs.Sub exp1 exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "-"), prt 2 exp2])
     Syntax.Grammar.Abs.Ite bexp exp1 exp2 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 bexp, doc (showString "then"), prt 1 exp1, doc (showString "else"), prt 1 exp2])

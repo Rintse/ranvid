@@ -29,9 +29,9 @@ The reserved words used in grammar are the following:
 
 The symbols used in grammar are the following:
   | ( | ) | - | ^
-  | * | / | % | +
-  | == | < | > | !=
-  | <= | >= | ! | ,
+  | * | / | + | ==
+  | < | > | != | <=
+  | >= | ! | , |
 
 ===Comments===
 Single-line comments begin with #.There are no multiple-line comments in the grammar.
@@ -50,7 +50,6 @@ All other symbols are terminals.
   | //Exp2// | -> | //Exp3//
   |  |  **|**  | //Exp2// ``*`` //Exp3//
   |  |  **|**  | //Exp2// ``/`` //Exp3//
-  |  |  **|**  | //Exp2// ``%`` //Exp3//
   | //Exp3// | -> | //Exp4//
   |  |  **|**  | //Exp3// ``^`` //Exp4//
   | //Exp4// | -> | //Exp5//

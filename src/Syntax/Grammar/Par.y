@@ -25,30 +25,29 @@ import Syntax.Grammar.Lex
 %token
   '!'      { PT _ (TS _ 1)  }
   '!='     { PT _ (TS _ 2)  }
-  '%'      { PT _ (TS _ 3)  }
-  '('      { PT _ (TS _ 4)  }
-  ')'      { PT _ (TS _ 5)  }
-  '*'      { PT _ (TS _ 6)  }
-  '+'      { PT _ (TS _ 7)  }
-  ','      { PT _ (TS _ 8)  }
-  '-'      { PT _ (TS _ 9)  }
-  '/'      { PT _ (TS _ 10) }
-  '<'      { PT _ (TS _ 11) }
-  '<='     { PT _ (TS _ 12) }
-  '=='     { PT _ (TS _ 13) }
-  '>'      { PT _ (TS _ 14) }
-  '>='     { PT _ (TS _ 15) }
-  '^'      { PT _ (TS _ 16) }
-  'and'    { PT _ (TS _ 17) }
-  'else'   { PT _ (TS _ 18) }
-  'false'  { PT _ (TS _ 19) }
-  'if'     { PT _ (TS _ 20) }
-  'or'     { PT _ (TS _ 21) }
-  'rand'   { PT _ (TS _ 22) }
-  'then'   { PT _ (TS _ 23) }
-  'true'   { PT _ (TS _ 24) }
-  'x'      { PT _ (TS _ 25) }
-  'y'      { PT _ (TS _ 26) }
+  '('      { PT _ (TS _ 3)  }
+  ')'      { PT _ (TS _ 4)  }
+  '*'      { PT _ (TS _ 5)  }
+  '+'      { PT _ (TS _ 6)  }
+  ','      { PT _ (TS _ 7)  }
+  '-'      { PT _ (TS _ 8)  }
+  '/'      { PT _ (TS _ 9)  }
+  '<'      { PT _ (TS _ 10) }
+  '<='     { PT _ (TS _ 11) }
+  '=='     { PT _ (TS _ 12) }
+  '>'      { PT _ (TS _ 13) }
+  '>='     { PT _ (TS _ 14) }
+  '^'      { PT _ (TS _ 15) }
+  'and'    { PT _ (TS _ 16) }
+  'else'   { PT _ (TS _ 17) }
+  'false'  { PT _ (TS _ 18) }
+  'if'     { PT _ (TS _ 19) }
+  'or'     { PT _ (TS _ 20) }
+  'rand'   { PT _ (TS _ 21) }
+  'then'   { PT _ (TS _ 22) }
+  'true'   { PT _ (TS _ 23) }
+  'x'      { PT _ (TS _ 24) }
+  'y'      { PT _ (TS _ 25) }
   L_doubl  { PT _ (TD $$)   }
 
 %%
@@ -72,7 +71,6 @@ Exp2
   : Exp3 { $1 }
   | Exp2 '*' Exp3 { Syntax.Grammar.Abs.Mul $1 $3 }
   | Exp2 '/' Exp3 { Syntax.Grammar.Abs.Div $1 $3 }
-  | Exp2 '%' Exp3 { Syntax.Grammar.Abs.Mod $1 $3 }
 
 Exp3 :: { Syntax.Grammar.Abs.Exp }
 Exp3 : Exp4 { $1 } | Exp3 '^' Exp4 { Syntax.Grammar.Abs.Pow $1 $3 }

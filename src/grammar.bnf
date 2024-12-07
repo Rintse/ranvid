@@ -19,7 +19,6 @@ Min.        Exp4    ::= "-" Exp5 ;
 Pow.        Exp3    ::= Exp3 "^" Exp4 ;
 Mul.        Exp2    ::= Exp2 "*" Exp3 ;
 Div.        Exp2    ::= Exp2 "/" Exp3 ;
-Mod.        Exp2    ::= Exp2 "%" Exp3 ;
 Add.        Exp1    ::= Exp1 "+" Exp2 ;
 Sub.        Exp1    ::= Exp1 "-" Exp2 ;
 

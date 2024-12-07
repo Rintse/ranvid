@@ -15,6 +15,7 @@ import Data.Maybe
 -- The option list
 data Options = Options
     { optVerbose    :: Bool
+    , optSeedHash   :: String
     , optInput      :: IO String }
 
 -- The default options
@@ -39,6 +40,9 @@ readFile arg opt = do
 readVerb :: Options -> IO Options
 readVerb opt = return opt { optVerbose = True }
 
+readSeed :: String -> Options -> IO Options
+readSeed arg opt = return opt { optSeedHash = arg }
+
 -- Outputs a help message
 putHelp :: Options -> IO Options
 putHelp opt = do
@@ -51,6 +55,9 @@ options :: [ OptDescr (Options -> IO Options) ]
 options = 
     [ Option "i" ["input"] (ReqArg Args.readFile "FILE") 
         "Input file"
+
+    , Option "s" ["seed-hash"] (ReqArg readSeed "HASH") 
+        "The hash to seed the RNG with"
 
     , Option "v" ["verbose"] (NoArg readVerb) 
         "Enable verbose parsing"
