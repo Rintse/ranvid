@@ -8,7 +8,7 @@
 module Syntax.Grammar.Par
   ( happyError
   , myLexer
-  , pExp
+  , pTrip
   ) where
 
 import Prelude
@@ -18,118 +18,116 @@ import Syntax.Grammar.Lex
 
 }
 
-%name pExp Exp
+%name pTrip Trip
 -- no lexer declaration
 %monad { Err } { (>>=) } { return }
 %tokentype {Token}
 %token
-  '%'      { PT _ (TS _ 1)    }
-  '('      { PT _ (TS _ 2)    }
-  ')'      { PT _ (TS _ 3)    }
-  '*'      { PT _ (TS _ 4)    }
-  '+'      { PT _ (TS _ 5)    }
-  ','      { PT _ (TS _ 6)    }
-  '-'      { PT _ (TS _ 7)    }
-  '/'      { PT _ (TS _ 8)    }
-  '<'      { PT _ (TS _ 9)    }
-  '>'      { PT _ (TS _ 10)   }
-  '^'      { PT _ (TS _ 11)   }
-  'else'   { PT _ (TS _ 12)   }
-  'false'  { PT _ (TS _ 13)   }
-  'if'     { PT _ (TS _ 14)   }
-  'rand'   { PT _ (TS _ 15)   }
-  'then'   { PT _ (TS _ 16)   }
-  'true'   { PT _ (TS _ 17)   }
-  L_Ident  { PT _ (TV $$)     }
-  L_doubl  { PT _ (TD $$)     }
-  L_Conj   { PT _ (T_Conj $$) }
-  L_Disj   { PT _ (T_Disj $$) }
-  L_TNot   { PT _ (T_TNot $$) }
-  L_TEq    { PT _ (T_TEq $$)  }
-  L_TNeq   { PT _ (T_TNeq $$) }
-  L_TLeq   { PT _ (T_TLeq $$) }
-  L_TGeq   { PT _ (T_TGeq $$) }
+  '!'      { PT _ (TS _ 1)  }
+  '!='     { PT _ (TS _ 2)  }
+  '%'      { PT _ (TS _ 3)  }
+  '('      { PT _ (TS _ 4)  }
+  ')'      { PT _ (TS _ 5)  }
+  '*'      { PT _ (TS _ 6)  }
+  '+'      { PT _ (TS _ 7)  }
+  ','      { PT _ (TS _ 8)  }
+  '-'      { PT _ (TS _ 9)  }
+  '/'      { PT _ (TS _ 10) }
+  '<'      { PT _ (TS _ 11) }
+  '<='     { PT _ (TS _ 12) }
+  '=='     { PT _ (TS _ 13) }
+  '>'      { PT _ (TS _ 14) }
+  '>='     { PT _ (TS _ 15) }
+  '^'      { PT _ (TS _ 16) }
+  'and'    { PT _ (TS _ 17) }
+  'else'   { PT _ (TS _ 18) }
+  'false'  { PT _ (TS _ 19) }
+  'if'     { PT _ (TS _ 20) }
+  'or'     { PT _ (TS _ 21) }
+  'rand'   { PT _ (TS _ 22) }
+  'then'   { PT _ (TS _ 23) }
+  'true'   { PT _ (TS _ 24) }
+  'x'      { PT _ (TS _ 25) }
+  'y'      { PT _ (TS _ 26) }
+  L_doubl  { PT _ (TD $$)   }
 
 %%
-
-Ident :: { Syntax.Grammar.Abs.Ident }
-Ident  : L_Ident { Syntax.Grammar.Abs.Ident $1 }
 
 Double  :: { Double }
 Double   : L_doubl  { (read $1) :: Double }
 
-Conj :: { Syntax.Grammar.Abs.Conj }
-Conj  : L_Conj { Syntax.Grammar.Abs.Conj $1 }
+Exp :: { Syntax.Grammar.Abs.Exp }
+Exp
+  : Exp1 { $1 }
+  | 'if' BExp 'then' Exp1 'else' Exp1 { Syntax.Grammar.Abs.Ite $2 $4 $6 }
 
-Disj :: { Syntax.Grammar.Abs.Disj }
-Disj  : L_Disj { Syntax.Grammar.Abs.Disj $1 }
+Exp1 :: { Syntax.Grammar.Abs.Exp }
+Exp1
+  : Exp2 { $1 }
+  | Exp1 '+' Exp2 { Syntax.Grammar.Abs.Add $1 $3 }
+  | Exp1 '-' Exp2 { Syntax.Grammar.Abs.Sub $1 $3 }
 
-TNot :: { Syntax.Grammar.Abs.TNot }
-TNot  : L_TNot { Syntax.Grammar.Abs.TNot $1 }
+Exp2 :: { Syntax.Grammar.Abs.Exp }
+Exp2
+  : Exp3 { $1 }
+  | Exp2 '*' Exp3 { Syntax.Grammar.Abs.Mul $1 $3 }
+  | Exp2 '/' Exp3 { Syntax.Grammar.Abs.Div $1 $3 }
+  | Exp2 '%' Exp3 { Syntax.Grammar.Abs.Mod $1 $3 }
 
-TEq :: { Syntax.Grammar.Abs.TEq }
-TEq  : L_TEq { Syntax.Grammar.Abs.TEq $1 }
+Exp3 :: { Syntax.Grammar.Abs.Exp }
+Exp3 : Exp4 { $1 } | Exp3 '^' Exp4 { Syntax.Grammar.Abs.Pow $1 $3 }
 
-TNeq :: { Syntax.Grammar.Abs.TNeq }
-TNeq  : L_TNeq { Syntax.Grammar.Abs.TNeq $1 }
+Exp4 :: { Syntax.Grammar.Abs.Exp }
+Exp4 : Exp5 { $1 } | '-' Exp5 { Syntax.Grammar.Abs.Min $2 }
 
-TLeq :: { Syntax.Grammar.Abs.TLeq }
-TLeq  : L_TLeq { Syntax.Grammar.Abs.TLeq $1 }
+Exp5 :: { Syntax.Grammar.Abs.Exp }
+Exp5 : '(' Exp ')' { $2 }
 
-TGeq :: { Syntax.Grammar.Abs.TGeq }
-TGeq  : L_TGeq { Syntax.Grammar.Abs.TGeq $1 }
+BExp :: { Syntax.Grammar.Abs.BExp }
+BExp
+  : BExp1 { $1 } | BExp 'or' BExp1 { Syntax.Grammar.Abs.Or $1 $3 }
+
+BExp1 :: { Syntax.Grammar.Abs.BExp }
+BExp1
+  : BExp2 { $1 } | BExp1 'and' BExp2 { Syntax.Grammar.Abs.And $1 $3 }
+
+BExp2 :: { Syntax.Grammar.Abs.BExp }
+BExp2 : BExp3 { $1 } | '!' BExp3 { Syntax.Grammar.Abs.Not $2 }
+
+BExp3 :: { Syntax.Grammar.Abs.BExp }
+BExp3
+  : BExp4 { $1 }
+  | Exp1 '==' Exp2 { Syntax.Grammar.Abs.Eq $1 $3 }
+  | Exp1 '<' Exp2 { Syntax.Grammar.Abs.Lt $1 $3 }
+  | Exp1 '>' Exp2 { Syntax.Grammar.Abs.Gt $1 $3 }
+  | Exp1 '!=' Exp2 { Syntax.Grammar.Abs.Neq $1 $3 }
+  | Exp1 '<=' Exp2 { Syntax.Grammar.Abs.Leq $1 $3 }
+  | Exp1 '>=' Exp2 { Syntax.Grammar.Abs.Geq $1 $3 }
+
+BExp4 :: { Syntax.Grammar.Abs.BExp }
+BExp4
+  : '(' BExp ')' { $2 } | BConst { Syntax.Grammar.Abs.EBVal $1 }
 
 BConst :: { Syntax.Grammar.Abs.BConst }
 BConst
   : 'true' { Syntax.Grammar.Abs.BTrue }
   | 'false' { Syntax.Grammar.Abs.BFalse }
 
-Exp8 :: { Syntax.Grammar.Abs.Exp }
-Exp8
-  : Ident { Syntax.Grammar.Abs.Var $1 }
-  | Double { Syntax.Grammar.Abs.DVal $1 }
-  | BConst { Syntax.Grammar.Abs.BVal $1 }
-  | 'rand' { Syntax.Grammar.Abs.Rand }
+Var :: { Syntax.Grammar.Abs.Var }
+Var
+  : 'x' { Syntax.Grammar.Abs.XVar } | 'y' { Syntax.Grammar.Abs.YVar }
 
-Exp7 :: { Syntax.Grammar.Abs.Exp }
-Exp7
-  : '-' Exp8 { Syntax.Grammar.Abs.Min $2 }
-  | Exp7 '^' Exp8 { Syntax.Grammar.Abs.Pow $1 $3 }
+DVal :: { Syntax.Grammar.Abs.DVal }
+DVal : Double { Syntax.Grammar.Abs.DVal $1 }
 
 Exp6 :: { Syntax.Grammar.Abs.Exp }
 Exp6
-  : Exp6 '*' Exp7 { Syntax.Grammar.Abs.Mul $1 $3 }
-  | Exp6 '/' Exp7 { Syntax.Grammar.Abs.Div $1 $3 }
-  | Exp6 '%' Exp7 { Syntax.Grammar.Abs.Mod $1 $3 }
+  : Var { Syntax.Grammar.Abs.EVar $1 }
+  | DVal { Syntax.Grammar.Abs.EDVal $1 }
+  | 'rand' { Syntax.Grammar.Abs.Rand }
 
-Exp5 :: { Syntax.Grammar.Abs.Exp }
-Exp5
-  : Exp5 '+' Exp6 { Syntax.Grammar.Abs.Add $1 $3 }
-  | Exp5 '-' Exp6 { Syntax.Grammar.Abs.Sub $1 $3 }
-
-Exp4 :: { Syntax.Grammar.Abs.Exp }
-Exp4
-  : Exp4 TEq Exp5 { Syntax.Grammar.Abs.Eq $1 $2 $3 }
-  | Exp4 '<' Exp5 { Syntax.Grammar.Abs.Lt $1 $3 }
-  | Exp4 '>' Exp5 { Syntax.Grammar.Abs.Gt $1 $3 }
-  | Exp4 TNeq Exp5 { Syntax.Grammar.Abs.Neq $1 $2 $3 }
-  | Exp4 TLeq Exp5 { Syntax.Grammar.Abs.Leq $1 $2 $3 }
-  | Exp4 TGeq Exp5 { Syntax.Grammar.Abs.Geq $1 $2 $3 }
-
-Exp3 :: { Syntax.Grammar.Abs.Exp }
-Exp3 : TNot Exp4 { Syntax.Grammar.Abs.Not $1 $2 }
-
-Exp2 :: { Syntax.Grammar.Abs.Exp }
-Exp2
-  : Exp2 Conj Exp3 { Syntax.Grammar.Abs.And $1 $2 $3 }
-  | Exp2 Disj Exp3 { Syntax.Grammar.Abs.Or $1 $2 $3 }
-
-Exp1 :: { Syntax.Grammar.Abs.Exp }
-Exp1
-  : 'if' Exp2 'then' Exp2 'else' Exp2 { Syntax.Grammar.Abs.Ite $2 $4 $6 }
-
-Exp :: { Syntax.Grammar.Abs.Exp }
-Exp
+Trip :: { Syntax.Grammar.Abs.Trip }
+Trip
   : '(' Exp ',' Exp ',' Exp ')' { Syntax.Grammar.Abs.Triple $2 $4 $6 }
 
 {

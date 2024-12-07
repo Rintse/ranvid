@@ -15,48 +15,10 @@ type Result = Err String
 failure :: Show a => a -> Result
 failure x = Left $ "Undefined case: " ++ show x
 
-transIdent :: Syntax.Grammar.Abs.Ident -> Result
-transIdent x = case x of
-  Syntax.Grammar.Abs.Ident string -> failure x
-
-transConj :: Syntax.Grammar.Abs.Conj -> Result
-transConj x = case x of
-  Syntax.Grammar.Abs.Conj string -> failure x
-
-transDisj :: Syntax.Grammar.Abs.Disj -> Result
-transDisj x = case x of
-  Syntax.Grammar.Abs.Disj string -> failure x
-
-transTNot :: Syntax.Grammar.Abs.TNot -> Result
-transTNot x = case x of
-  Syntax.Grammar.Abs.TNot string -> failure x
-
-transTEq :: Syntax.Grammar.Abs.TEq -> Result
-transTEq x = case x of
-  Syntax.Grammar.Abs.TEq string -> failure x
-
-transTNeq :: Syntax.Grammar.Abs.TNeq -> Result
-transTNeq x = case x of
-  Syntax.Grammar.Abs.TNeq string -> failure x
-
-transTLeq :: Syntax.Grammar.Abs.TLeq -> Result
-transTLeq x = case x of
-  Syntax.Grammar.Abs.TLeq string -> failure x
-
-transTGeq :: Syntax.Grammar.Abs.TGeq -> Result
-transTGeq x = case x of
-  Syntax.Grammar.Abs.TGeq string -> failure x
-
-transBConst :: Syntax.Grammar.Abs.BConst -> Result
-transBConst x = case x of
-  Syntax.Grammar.Abs.BTrue -> failure x
-  Syntax.Grammar.Abs.BFalse -> failure x
-
 transExp :: Syntax.Grammar.Abs.Exp -> Result
 transExp x = case x of
-  Syntax.Grammar.Abs.Var ident -> failure x
-  Syntax.Grammar.Abs.DVal double -> failure x
-  Syntax.Grammar.Abs.BVal bconst -> failure x
+  Syntax.Grammar.Abs.EVar var -> failure x
+  Syntax.Grammar.Abs.EDVal dval -> failure x
   Syntax.Grammar.Abs.Rand -> failure x
   Syntax.Grammar.Abs.Min exp -> failure x
   Syntax.Grammar.Abs.Pow exp1 exp2 -> failure x
@@ -65,14 +27,35 @@ transExp x = case x of
   Syntax.Grammar.Abs.Mod exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Add exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Sub exp1 exp2 -> failure x
-  Syntax.Grammar.Abs.Eq exp1 teq exp2 -> failure x
+  Syntax.Grammar.Abs.Ite bexp exp1 exp2 -> failure x
+
+transBExp :: Syntax.Grammar.Abs.BExp -> Result
+transBExp x = case x of
+  Syntax.Grammar.Abs.EBVal bconst -> failure x
+  Syntax.Grammar.Abs.Eq exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Lt exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Gt exp1 exp2 -> failure x
-  Syntax.Grammar.Abs.Neq exp1 tneq exp2 -> failure x
-  Syntax.Grammar.Abs.Leq exp1 tleq exp2 -> failure x
-  Syntax.Grammar.Abs.Geq exp1 tgeq exp2 -> failure x
-  Syntax.Grammar.Abs.Not tnot exp -> failure x
-  Syntax.Grammar.Abs.And exp1 conj exp2 -> failure x
-  Syntax.Grammar.Abs.Or exp1 disj exp2 -> failure x
-  Syntax.Grammar.Abs.Ite exp1 exp2 exp3 -> failure x
+  Syntax.Grammar.Abs.Neq exp1 exp2 -> failure x
+  Syntax.Grammar.Abs.Leq exp1 exp2 -> failure x
+  Syntax.Grammar.Abs.Geq exp1 exp2 -> failure x
+  Syntax.Grammar.Abs.Not bexp -> failure x
+  Syntax.Grammar.Abs.And bexp1 bexp2 -> failure x
+  Syntax.Grammar.Abs.Or bexp1 bexp2 -> failure x
+
+transBConst :: Syntax.Grammar.Abs.BConst -> Result
+transBConst x = case x of
+  Syntax.Grammar.Abs.BTrue -> failure x
+  Syntax.Grammar.Abs.BFalse -> failure x
+
+transVar :: Syntax.Grammar.Abs.Var -> Result
+transVar x = case x of
+  Syntax.Grammar.Abs.XVar -> failure x
+  Syntax.Grammar.Abs.YVar -> failure x
+
+transDVal :: Syntax.Grammar.Abs.DVal -> Result
+transDVal x = case x of
+  Syntax.Grammar.Abs.DVal double -> failure x
+
+transTrip :: Syntax.Grammar.Abs.Trip -> Result
+transTrip x = case x of
   Syntax.Grammar.Abs.Triple exp1 exp2 exp3 -> failure x

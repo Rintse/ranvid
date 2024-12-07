@@ -28,7 +28,7 @@ $u = [. \n]          -- universal: any character
 
 -- Symbols and non-identifier-like reserved words
 
-@rsyms = \- | \^ | \* | \/ | \% | \+ | \< | \> | \( | \, | \)
+@rsyms = \( | \) | \- | \^ | \* | \/ | \% | \+ | \= \= | \< | \> | \! \= | \< \= | \> \= | \! | \,
 
 :-
 
@@ -41,34 +41,6 @@ $white+ ;
 -- Symbols
 @rsyms
     { tok (eitherResIdent TV) }
-
--- token Conj
-\∧ | a n d
-    { tok (eitherResIdent T_Conj) }
-
--- token Disj
-\∨ | o r
-    { tok (eitherResIdent T_Disj) }
-
--- token TNot
-[\! \¬]
-    { tok (eitherResIdent T_TNot) }
-
--- token TEq
-\⩵ | \= \=
-    { tok (eitherResIdent T_TEq) }
-
--- token TNeq
-\≠ | \! \=
-    { tok (eitherResIdent T_TNeq) }
-
--- token TLeq
-\≤ | \< \=
-    { tok (eitherResIdent T_TLeq) }
-
--- token TGeq
-\≥ | \> \=
-    { tok (eitherResIdent T_TGeq) }
 
 -- Keywords and Ident
 $l $i*
@@ -91,13 +63,6 @@ data Tok
   | TV !String                    -- ^ Identifier.
   | TD !String                    -- ^ Float literal.
   | TC !String                    -- ^ Character literal.
-  | T_Conj !String
-  | T_Disj !String
-  | T_TNot !String
-  | T_TEq !String
-  | T_TNeq !String
-  | T_TLeq !String
-  | T_TGeq !String
   deriving (Eq, Show, Ord)
 
 -- | Smart constructor for 'Tok' for the sake of backwards compatibility.
@@ -160,13 +125,6 @@ tokenText t = case t of
   PT _ (TD s)   -> s
   PT _ (TC s)   -> s
   Err _         -> "#error"
-  PT _ (T_Conj s) -> s
-  PT _ (T_Disj s) -> s
-  PT _ (T_TNot s) -> s
-  PT _ (T_TEq s) -> s
-  PT _ (T_TNeq s) -> s
-  PT _ (T_TLeq s) -> s
-  PT _ (T_TGeq s) -> s
 
 -- | Convert a token to a string.
 prToken :: Token -> String
@@ -193,13 +151,19 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b "<" 9
-    (b "+" 5
-       (b ")" 3 (b "(" 2 (b "%" 1 N N) N) (b "*" 4 N N))
-       (b "-" 7 (b "," 6 N N) (b "/" 8 N N)))
-    (b "if" 14
-       (b "else" 12 (b "^" 11 (b ">" 10 N N) N) (b "false" 13 N N))
-       (b "then" 16 (b "rand" 15 N N) (b "true" 17 N N)))
+  b ">" 14
+    (b "+" 7
+       (b "(" 4
+          (b "!=" 2 (b "!" 1 N N) (b "%" 3 N N)) (b "*" 6 (b ")" 5 N N) N))
+       (b "<" 11
+          (b "-" 9 (b "," 8 N N) (b "/" 10 N N))
+          (b "==" 13 (b "<=" 12 N N) N)))
+    (b "or" 21
+       (b "else" 18
+          (b "^" 16 (b ">=" 15 N N) (b "and" 17 N N))
+          (b "if" 20 (b "false" 19 N N) N))
+       (b "true" 24
+          (b "then" 23 (b "rand" 22 N N) N) (b "y" 26 (b "x" 25 N N) N)))
   where
   b s n = B bs (TS bs n)
     where

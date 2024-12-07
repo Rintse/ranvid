@@ -2,6 +2,6 @@
 set -e
 
 cd src
-rm -r Syntax/Grammar
+rm -rf Syntax/Grammar
 bnfc -p Syntax -d grammar.bnf
 rm -r Syntax/Grammar/Test.hs

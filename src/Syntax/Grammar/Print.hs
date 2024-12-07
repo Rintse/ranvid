@@ -137,48 +137,47 @@ instance Print Integer where
 instance Print Double where
   prt _ x = doc (shows x)
 
-instance Print Syntax.Grammar.Abs.Ident where
-  prt _ (Syntax.Grammar.Abs.Ident i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.Conj where
-  prt _ (Syntax.Grammar.Abs.Conj i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.Disj where
-  prt _ (Syntax.Grammar.Abs.Disj i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.TNot where
-  prt _ (Syntax.Grammar.Abs.TNot i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.TEq where
-  prt _ (Syntax.Grammar.Abs.TEq i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.TNeq where
-  prt _ (Syntax.Grammar.Abs.TNeq i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.TLeq where
-  prt _ (Syntax.Grammar.Abs.TLeq i) = doc $ showString i
-instance Print Syntax.Grammar.Abs.TGeq where
-  prt _ (Syntax.Grammar.Abs.TGeq i) = doc $ showString i
+instance Print Syntax.Grammar.Abs.Exp where
+  prt i = \case
+    Syntax.Grammar.Abs.EVar var -> prPrec i 6 (concatD [prt 0 var])
+    Syntax.Grammar.Abs.EDVal dval -> prPrec i 6 (concatD [prt 0 dval])
+    Syntax.Grammar.Abs.Rand -> prPrec i 6 (concatD [doc (showString "rand")])
+    Syntax.Grammar.Abs.Min exp -> prPrec i 4 (concatD [doc (showString "-"), prt 5 exp])
+    Syntax.Grammar.Abs.Pow exp1 exp2 -> prPrec i 3 (concatD [prt 3 exp1, doc (showString "^"), prt 4 exp2])
+    Syntax.Grammar.Abs.Mul exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "*"), prt 3 exp2])
+    Syntax.Grammar.Abs.Div exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "/"), prt 3 exp2])
+    Syntax.Grammar.Abs.Mod exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "%"), prt 3 exp2])
+    Syntax.Grammar.Abs.Add exp1 exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "+"), prt 2 exp2])
+    Syntax.Grammar.Abs.Sub exp1 exp2 -> prPrec i 1 (concatD [prt 1 exp1, doc (showString "-"), prt 2 exp2])
+    Syntax.Grammar.Abs.Ite bexp exp1 exp2 -> prPrec i 0 (concatD [doc (showString "if"), prt 0 bexp, doc (showString "then"), prt 1 exp1, doc (showString "else"), prt 1 exp2])
+
+instance Print Syntax.Grammar.Abs.BExp where
+  prt i = \case
+    Syntax.Grammar.Abs.EBVal bconst -> prPrec i 4 (concatD [prt 0 bconst])
+    Syntax.Grammar.Abs.Eq exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString "=="), prt 2 exp2])
+    Syntax.Grammar.Abs.Lt exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString "<"), prt 2 exp2])
+    Syntax.Grammar.Abs.Gt exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString ">"), prt 2 exp2])
+    Syntax.Grammar.Abs.Neq exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString "!="), prt 2 exp2])
+    Syntax.Grammar.Abs.Leq exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString "<="), prt 2 exp2])
+    Syntax.Grammar.Abs.Geq exp1 exp2 -> prPrec i 3 (concatD [prt 1 exp1, doc (showString ">="), prt 2 exp2])
+    Syntax.Grammar.Abs.Not bexp -> prPrec i 2 (concatD [doc (showString "!"), prt 3 bexp])
+    Syntax.Grammar.Abs.And bexp1 bexp2 -> prPrec i 1 (concatD [prt 1 bexp1, doc (showString "and"), prt 2 bexp2])
+    Syntax.Grammar.Abs.Or bexp1 bexp2 -> prPrec i 0 (concatD [prt 0 bexp1, doc (showString "or"), prt 1 bexp2])
+
 instance Print Syntax.Grammar.Abs.BConst where
   prt i = \case
     Syntax.Grammar.Abs.BTrue -> prPrec i 0 (concatD [doc (showString "true")])
     Syntax.Grammar.Abs.BFalse -> prPrec i 0 (concatD [doc (showString "false")])
 
-instance Print Syntax.Grammar.Abs.Exp where
+instance Print Syntax.Grammar.Abs.Var where
   prt i = \case
-    Syntax.Grammar.Abs.Var id_ -> prPrec i 8 (concatD [prt 0 id_])
-    Syntax.Grammar.Abs.DVal d -> prPrec i 8 (concatD [prt 0 d])
-    Syntax.Grammar.Abs.BVal bconst -> prPrec i 8 (concatD [prt 0 bconst])
-    Syntax.Grammar.Abs.Rand -> prPrec i 8 (concatD [doc (showString "rand")])
-    Syntax.Grammar.Abs.Min exp -> prPrec i 7 (concatD [doc (showString "-"), prt 8 exp])
-    Syntax.Grammar.Abs.Pow exp1 exp2 -> prPrec i 7 (concatD [prt 7 exp1, doc (showString "^"), prt 8 exp2])
-    Syntax.Grammar.Abs.Mul exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, doc (showString "*"), prt 7 exp2])
-    Syntax.Grammar.Abs.Div exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, doc (showString "/"), prt 7 exp2])
-    Syntax.Grammar.Abs.Mod exp1 exp2 -> prPrec i 6 (concatD [prt 6 exp1, doc (showString "%"), prt 7 exp2])
-    Syntax.Grammar.Abs.Add exp1 exp2 -> prPrec i 5 (concatD [prt 5 exp1, doc (showString "+"), prt 6 exp2])
-    Syntax.Grammar.Abs.Sub exp1 exp2 -> prPrec i 5 (concatD [prt 5 exp1, doc (showString "-"), prt 6 exp2])
-    Syntax.Grammar.Abs.Eq exp1 teq exp2 -> prPrec i 4 (concatD [prt 4 exp1, prt 0 teq, prt 5 exp2])
-    Syntax.Grammar.Abs.Lt exp1 exp2 -> prPrec i 4 (concatD [prt 4 exp1, doc (showString "<"), prt 5 exp2])
-    Syntax.Grammar.Abs.Gt exp1 exp2 -> prPrec i 4 (concatD [prt 4 exp1, doc (showString ">"), prt 5 exp2])
-    Syntax.Grammar.Abs.Neq exp1 tneq exp2 -> prPrec i 4 (concatD [prt 4 exp1, prt 0 tneq, prt 5 exp2])
-    Syntax.Grammar.Abs.Leq exp1 tleq exp2 -> prPrec i 4 (concatD [prt 4 exp1, prt 0 tleq, prt 5 exp2])
-    Syntax.Grammar.Abs.Geq exp1 tgeq exp2 -> prPrec i 4 (concatD [prt 4 exp1, prt 0 tgeq, prt 5 exp2])
-    Syntax.Grammar.Abs.Not tnot exp -> prPrec i 3 (concatD [prt 0 tnot, prt 4 exp])
-    Syntax.Grammar.Abs.And exp1 conj exp2 -> prPrec i 2 (concatD [prt 2 exp1, prt 0 conj, prt 3 exp2])
-    Syntax.Grammar.Abs.Or exp1 disj exp2 -> prPrec i 2 (concatD [prt 2 exp1, prt 0 disj, prt 3 exp2])
-    Syntax.Grammar.Abs.Ite exp1 exp2 exp3 -> prPrec i 1 (concatD [doc (showString "if"), prt 2 exp1, doc (showString "then"), prt 2 exp2, doc (showString "else"), prt 2 exp3])
+    Syntax.Grammar.Abs.XVar -> prPrec i 0 (concatD [doc (showString "x")])
+    Syntax.Grammar.Abs.YVar -> prPrec i 0 (concatD [doc (showString "y")])
+
+instance Print Syntax.Grammar.Abs.DVal where
+  prt i = \case
+    Syntax.Grammar.Abs.DVal d -> prPrec i 0 (concatD [prt 0 d])
+
+instance Print Syntax.Grammar.Abs.Trip where
+  prt i = \case
     Syntax.Grammar.Abs.Triple exp1 exp2 exp3 -> prPrec i 0 (concatD [doc (showString "("), prt 0 exp1, doc (showString ","), prt 0 exp2, doc (showString ","), prt 0 exp3, doc (showString ")")])
