@@ -21,16 +21,16 @@ transExp x = case x of
   Syntax.Grammar.Abs.EDVal dval -> failure x
   Syntax.Grammar.Abs.Rand -> failure x
   Syntax.Grammar.Abs.Min exp -> failure x
-  Syntax.Grammar.Abs.Pow exp1 exp2 -> failure x
+  Syntax.Grammar.Abs.Sqrt exp -> failure x
+  Syntax.Grammar.Abs.Sin exp -> failure x
+  Syntax.Grammar.Abs.Cos exp -> failure x
   Syntax.Grammar.Abs.Mul exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Div exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Add exp1 exp2 -> failure x
-  Syntax.Grammar.Abs.Sub exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Ite bexp exp1 exp2 -> failure x
 
 transBExp :: Syntax.Grammar.Abs.BExp -> Result
 transBExp x = case x of
-  Syntax.Grammar.Abs.EBVal bconst -> failure x
   Syntax.Grammar.Abs.Eq exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Lt exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Gt exp1 exp2 -> failure x
@@ -40,11 +40,6 @@ transBExp x = case x of
   Syntax.Grammar.Abs.Not bexp -> failure x
   Syntax.Grammar.Abs.And bexp1 bexp2 -> failure x
   Syntax.Grammar.Abs.Or bexp1 bexp2 -> failure x
-
-transBConst :: Syntax.Grammar.Abs.BConst -> Result
-transBConst x = case x of
-  Syntax.Grammar.Abs.BTrue -> failure x
-  Syntax.Grammar.Abs.BFalse -> failure x
 
 transVar :: Syntax.Grammar.Abs.Var -> Result
 transVar x = case x of

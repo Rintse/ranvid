@@ -20,8 +20,11 @@ description:         Please see the README on GitHub at <https://github.com/rint
 
 dependencies:
 - base >= 4.7 && < 5
+- mtl
 - array
+- binary
 - random
+- bytestring
 - generic-random
 - QuickCheck
 

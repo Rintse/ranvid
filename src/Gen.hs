@@ -16,16 +16,12 @@ maxExpDepth = 20
 
 -- TODO: make all of these not orphaned instances
 
-deriving instance Generic BConst
 deriving instance Generic Var
 deriving instance Generic Exp
 deriving instance Generic BExp
 
 instance Arbitrary DVal where
     arbitrary = DVal <$> choose (-1, 1)
-
-instance Arbitrary BConst where
-    arbitrary = genericArbitrary uniform
 
 instance Arbitrary Var where
     arbitrary = genericArbitrary uniform
@@ -39,9 +35,7 @@ leafGen = oneof
     ]
 
 instance Arbitrary BExp where
-    arbitrary = do
-        let base = EBVal <$> oneof [ pure BTrue, pure BFalse ]
-        genericArbitraryRec uniform `withBaseCase` base
+    arbitrary = genericArbitraryRec uniform
 
 instance Arbitrary Exp where
     arbitrary = genericArbitraryRec uniform `withBaseCase` leafGen

@@ -5,24 +5,25 @@ comment     "#" ;
 coercions Exp 5 ;
 coercions BExp 4 ;
 
-BTrue.      BConst  ::= "true" ;
-BFalse.     BConst  ::= "false" ;
 XVar.       Var     ::= "x" ;
 YVar.       Var     ::= "y" ;
 DVal.       DVal    ::= Double ;
 
 EVar.       Exp6    ::= Var;
 EDVal.      Exp6    ::= DVal;
-Rand.       Exp6    ::= "rand" ;
+Rand.       Exp6    ::= "rand()" ;
 
+-- in the paper:
+-- add, mul, sin, cos, exp, sqrt, division, mix
 Min.        Exp4    ::= "-" Exp5 ;
-Pow.        Exp3    ::= Exp3 "^" Exp4 ;
+Sqrt.       Exp4    ::= "sqrt(" Exp5 ")";
+Sin.        Exp4    ::= "sin(" Exp5 ")";
+Cos.        Exp4    ::= "cos(" Exp5 ")";
 Mul.        Exp2    ::= Exp2 "*" Exp3 ;
 Div.        Exp2    ::= Exp2 "/" Exp3 ;
 Add.        Exp1    ::= Exp1 "+" Exp2 ;
-Sub.        Exp1    ::= Exp1 "-" Exp2 ;
 
-EBVal.      BExp4   ::= BConst;
+-- all of these are just for the if condition
 Eq.         BExp3   ::= Exp1 "==" Exp2 ;
 Lt.         BExp3   ::= Exp1 "<" Exp2 ;
 Gt.         BExp3   ::= Exp1 ">" Exp2 ;

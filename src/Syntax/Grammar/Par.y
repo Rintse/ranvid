@@ -37,15 +37,15 @@ import Syntax.Grammar.Lex
   '=='     { PT _ (TS _ 12) }
   '>'      { PT _ (TS _ 13) }
   '>='     { PT _ (TS _ 14) }
-  '^'      { PT _ (TS _ 15) }
-  'and'    { PT _ (TS _ 16) }
+  'and'    { PT _ (TS _ 15) }
+  'cos('   { PT _ (TS _ 16) }
   'else'   { PT _ (TS _ 17) }
-  'false'  { PT _ (TS _ 18) }
-  'if'     { PT _ (TS _ 19) }
-  'or'     { PT _ (TS _ 20) }
-  'rand'   { PT _ (TS _ 21) }
-  'then'   { PT _ (TS _ 22) }
-  'true'   { PT _ (TS _ 23) }
+  'if'     { PT _ (TS _ 18) }
+  'or'     { PT _ (TS _ 19) }
+  'rand()' { PT _ (TS _ 20) }
+  'sin('   { PT _ (TS _ 21) }
+  'sqrt('  { PT _ (TS _ 22) }
+  'then'   { PT _ (TS _ 23) }
   'x'      { PT _ (TS _ 24) }
   'y'      { PT _ (TS _ 25) }
   L_doubl  { PT _ (TD $$)   }
@@ -61,10 +61,7 @@ Exp
   | 'if' BExp 'then' Exp1 'else' Exp1 { Syntax.Grammar.Abs.Ite $2 $4 $6 }
 
 Exp1 :: { Syntax.Grammar.Abs.Exp }
-Exp1
-  : Exp2 { $1 }
-  | Exp1 '+' Exp2 { Syntax.Grammar.Abs.Add $1 $3 }
-  | Exp1 '-' Exp2 { Syntax.Grammar.Abs.Sub $1 $3 }
+Exp1 : Exp2 { $1 } | Exp1 '+' Exp2 { Syntax.Grammar.Abs.Add $1 $3 }
 
 Exp2 :: { Syntax.Grammar.Abs.Exp }
 Exp2
@@ -73,10 +70,15 @@ Exp2
   | Exp2 '/' Exp3 { Syntax.Grammar.Abs.Div $1 $3 }
 
 Exp3 :: { Syntax.Grammar.Abs.Exp }
-Exp3 : Exp4 { $1 } | Exp3 '^' Exp4 { Syntax.Grammar.Abs.Pow $1 $3 }
+Exp3 : Exp4 { $1 }
 
 Exp4 :: { Syntax.Grammar.Abs.Exp }
-Exp4 : Exp5 { $1 } | '-' Exp5 { Syntax.Grammar.Abs.Min $2 }
+Exp4
+  : Exp5 { $1 }
+  | '-' Exp5 { Syntax.Grammar.Abs.Min $2 }
+  | 'sqrt(' Exp5 ')' { Syntax.Grammar.Abs.Sqrt $2 }
+  | 'sin(' Exp5 ')' { Syntax.Grammar.Abs.Sin $2 }
+  | 'cos(' Exp5 ')' { Syntax.Grammar.Abs.Cos $2 }
 
 Exp5 :: { Syntax.Grammar.Abs.Exp }
 Exp5 : '(' Exp ')' { $2 }
@@ -103,13 +105,7 @@ BExp3
   | Exp1 '>=' Exp2 { Syntax.Grammar.Abs.Geq $1 $3 }
 
 BExp4 :: { Syntax.Grammar.Abs.BExp }
-BExp4
-  : '(' BExp ')' { $2 } | BConst { Syntax.Grammar.Abs.EBVal $1 }
-
-BConst :: { Syntax.Grammar.Abs.BConst }
-BConst
-  : 'true' { Syntax.Grammar.Abs.BTrue }
-  | 'false' { Syntax.Grammar.Abs.BFalse }
+BExp4 : '(' BExp ')' { $2 }
 
 Var :: { Syntax.Grammar.Abs.Var }
 Var
@@ -122,7 +118,7 @@ Exp6 :: { Syntax.Grammar.Abs.Exp }
 Exp6
   : Var { Syntax.Grammar.Abs.EVar $1 }
   | DVal { Syntax.Grammar.Abs.EDVal $1 }
-  | 'rand' { Syntax.Grammar.Abs.Rand }
+  | 'rand()' { Syntax.Grammar.Abs.Rand }
 
 Trip :: { Syntax.Grammar.Abs.Trip }
 Trip

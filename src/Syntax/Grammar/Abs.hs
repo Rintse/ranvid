@@ -12,17 +12,17 @@ data Exp
     | EDVal DVal
     | Rand
     | Min Exp
-    | Pow Exp Exp
+    | Sqrt Exp
+    | Sin Exp
+    | Cos Exp
     | Mul Exp Exp
     | Div Exp Exp
     | Add Exp Exp
-    | Sub Exp Exp
     | Ite BExp Exp Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data BExp
-    = EBVal BConst
-    | Eq Exp Exp
+    = Eq Exp Exp
     | Lt Exp Exp
     | Gt Exp Exp
     | Neq Exp Exp
@@ -31,9 +31,6 @@ data BExp
     | Not BExp
     | And BExp BExp
     | Or BExp BExp
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data BConst = BTrue | BFalse
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Var = XVar | YVar
