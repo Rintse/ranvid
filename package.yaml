@@ -4,6 +4,7 @@ github:              "Rintse/ranvid"
 license:             BSD-3-Clause
 author:              "Rintse"
 copyright:           "2024 Rintse"
+build-type:          Custom
 
 extra-source-files:
 - README.md
@@ -16,7 +17,7 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/rintse/ranvid#readme>
+description: Please see the README on GitHub at <https://github.com/rintse/ranvid#readme>
 
 dependencies:
 - base >= 4.7 && < 5
@@ -39,24 +40,25 @@ ghc-options:
 - -Wpartial-fields
 - -Wredundant-constraints
 
+custom-setup:
+  dependencies:
+  - base
+  - Cabal
+  - process
+
 library:
   source-dirs: src
+  generated-exposed-modules: 
+  - Syntax.Grammar.Par
+  - Syntax.Grammar.Lex
+  - Syntax.Grammar.Abs
+  - Syntax.Grammar.Print
+
 
 executables:
   ranvid-exe:
     main:                Main.hs
     source-dirs:         app
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    dependencies:
-    - ranvid
-
-tests:
-  ranvid-test:
-    main:                Spec.hs
-    source-dirs:         test
     ghc-options:
     - -threaded
     - -rtsopts

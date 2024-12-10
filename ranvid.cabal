@@ -14,7 +14,7 @@ maintainer:     Rintse
 copyright:      2024 Rintse
 license:        BSD-3-Clause
 license-file:   LICENSE
-build-type:     Simple
+build-type:     Custom
 extra-source-files:
     README.md
     CHANGELOG.md
@@ -23,23 +23,31 @@ source-repository head
   type: git
   location: https://github.com/Rintse/ranvid
 
+custom-setup
+  setup-depends:
+      Cabal
+    , base
+    , process
+
 library
   exposed-modules:
       Args
       Eval
       Gen
       Lib
-      Syntax.Grammar.Abs
-      Syntax.Grammar.ErrM
-      Syntax.Grammar.Lex
-      Syntax.Grammar.Par
-      Syntax.Grammar.Print
-      Syntax.Grammar.Skel
       Syntax.Parse
+      Syntax.Grammar.Par
+      Syntax.Grammar.Lex
+      Syntax.Grammar.Abs
+      Syntax.Grammar.Print
   other-modules:
       Paths_ranvid
   autogen-modules:
       Paths_ranvid
+      Syntax.Grammar.Par
+      Syntax.Grammar.Lex
+      Syntax.Grammar.Abs
+      Syntax.Grammar.Print
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
@@ -62,28 +70,6 @@ executable ranvid-exe
       Paths_ranvid
   hs-source-dirs:
       app
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
-  build-depends:
-      QuickCheck
-    , array
-    , base >=4.7 && <5
-    , binary
-    , bytestring
-    , generic-random
-    , mtl
-    , random
-    , ranvid
-  default-language: Haskell2010
-
-test-suite ranvid-test
-  type: exitcode-stdio-1.0
-  main-is: Spec.hs
-  other-modules:
-      Paths_ranvid
-  autogen-modules:
-      Paths_ranvid
-  hs-source-dirs:
-      test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       QuickCheck
