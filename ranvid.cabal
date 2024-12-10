@@ -35,6 +35,8 @@ library
       Eval
       Gen
       Lib
+      Syntax.Grammar.ErrM
+      Syntax.Grammar.Skel
       Syntax.Parse
       Syntax.Grammar.Par
       Syntax.Grammar.Lex

@@ -1,28 +1,32 @@
-module Args where
+module Args ( getOpts, Options(..)) where
 
-import Syntax.Grammar.Abs
-import Syntax.Parse
-
+import Control.Monad ( unless )
 import System.Console.GetOpt
 import Control.Exception
-import System.IO as IO 
+import System.IO as IO
 import System.Exit
 import System.Environment
+import System.Random ( uniformR, mkStdGen, randomIO )
 import Data.Char
-import Text.Read (readMaybe)
-import Data.Maybe
+
+printableChars :: (Int, Int)
+printableChars = (48, 121)
+
+randomSeed :: IO String
+randomSeed = do
+    global_seed <- (randomIO :: IO Int)
+    let rListRec g = let (r, g2) = uniformR printableChars g in r : rListRec g2
+    return $ map chr $ take 8 $ rListRec (mkStdGen global_seed)
 
 -- The option list
 data Options = Options
     { optVerbose    :: Bool
     , optSeedHash   :: String
-    , optInput      :: IO String }
+    , optInput      :: String }
 
 -- The default options
-defaultOpts :: Options
-defaultOpts = Options  
-    { optVerbose    = False
-    , optInput      = getContents }
+defaultOpts :: IO Options
+defaultOpts = Options False <$> randomSeed <*> getContents
 
 type ParseMonad a = IO (Either SomeException a)
 
@@ -31,10 +35,10 @@ readFile :: String -> Options -> IO Options
 readFile arg opt = do
     file <- try (IO.readFile arg) :: ParseMonad String
     case file of
-        Left ex -> do 
+        Left ex -> do
             putStrLn $ "Error opening file:\n" ++ show ex
             exitFailure
-        Right content -> return opt { optInput = return content }
+        Right content -> return opt { optInput = content }
 
 -- Sets the verbosity
 readVerb :: Options -> IO Options
@@ -45,24 +49,34 @@ readSeed arg opt = return opt { optSeedHash = arg }
 
 -- Outputs a help message
 putHelp :: Options -> IO Options
-putHelp opt = do
+putHelp _ = do
     prg <- getProgName
     hPutStrLn stderr (usageInfo prg options)
     exitSuccess
 
 -- The options as functions to be threaded through
 options :: [ OptDescr (Options -> IO Options) ]
-options = 
-    [ Option "i" ["input"] (ReqArg Args.readFile "FILE") 
+options =
+    [ Option "i" ["input"] (ReqArg Args.readFile "FILE")
         "Input file"
 
-    , Option "s" ["seed-hash"] (ReqArg readSeed "HASH") 
+    , Option "s" ["seed-hash"] (ReqArg Args.readSeed "HASH")
         "The hash to seed the RNG with"
 
-    , Option "v" ["verbose"] (NoArg readVerb) 
+    , Option "v" ["verbose"] (NoArg readVerb)
         "Enable verbose parsing"
 
-    , Option "h" ["help"] (NoArg putHelp) 
-        "Display help message" 
+    , Option "h" ["help"] (NoArg putHelp)
+        "Display help message"
     ]
 
+getOpts :: IO Options
+getOpts = do
+    args <- getArgs -- Get and parse options
+    let (optArgs, _nonOpts, errs) = getOpt RequireOrder options args
+
+    unless (null errs) ( do
+        putStrLn "The were errors parsing the arguments:"
+        mapM_ putStr errs >> exitFailure )
+
+    foldl (>>=) defaultOpts optArgs

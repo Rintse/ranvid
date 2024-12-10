@@ -21,7 +21,7 @@ deriving instance Generic Exp
 deriving instance Generic BExp
 
 instance Arbitrary DVal where
-    arbitrary = DVal <$> choose (-1, 1)
+    arbitrary = Val <$> choose (-1, 1)
 
 instance Arbitrary Var where
     arbitrary = genericArbitrary uniform

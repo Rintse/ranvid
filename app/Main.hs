@@ -2,15 +2,14 @@ module Main (main) where
 
 import Syntax.Grammar.Abs
 import Eval
-import Args
+import Args ( getOpts, Options(..) )
 import Gen
 
 import Test.QuickCheck
 import System.Environment ( getArgs )
 import System.Console.GetOpt
-import Control.Monad ( unless )
 import System.Exit
-import Syntax.Grammar.Print (printTree)
+import Syntax.Grammar.Print ( printTree )
 
 defaultCanvasSize :: (Int, Int)
 defaultCanvasSize = (3, 3)
@@ -27,21 +26,10 @@ defaultCanvas = canvas defaultCanvasSize
 
 main :: IO ()
 main = do
-    args <- getArgs -- Get and parse options
-    let (optArgs, nonOpts, errs) = getOpt RequireOrder Args.options args
-
-    unless (null errs) ( do
-        putStrLn "The were errors parsing the arguments:"
-        mapM_ putStr errs >> exitFailure )
-
-    opts <- foldl (>>=) (return defaultOpts) optArgs
-    let Options 
-            { optVerbose = verb
+    Options { optVerbose = verb
             , optInput = input 
             , optSeedHash = seed
-            } = opts
-
-    -- TODO: add option to pass saved program
+            } <- getOpts
 
     prog2 <- generate (arbitrary :: Gen Trip)
     putStrLn "Generated expression:"

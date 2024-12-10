@@ -7,7 +7,7 @@ coercions BExp 4 ;
 
 XVar.       Var     ::= "x" ;
 YVar.       Var     ::= "y" ;
-DVal.       DVal    ::= Double ;
+Val.        DVal    ::= Double ;
 
 EVar.       Exp6    ::= Var;
 EDVal.      Exp6    ::= DVal;

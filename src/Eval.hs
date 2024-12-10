@@ -30,7 +30,7 @@ evalTrip' (Triple a b c) x y = liftA3 (,,)
 evalExp :: Exp -> Int -> Int -> State [Double] Double
 evalExp (EVar XVar) x _ = return $ fromIntegral x
 evalExp (EVar YVar) _ y = return $ fromIntegral y
-evalExp (EDVal (DVal d)) _ _ = return d
+evalExp (EDVal (Val d)) _ _ = return d
 evalExp Rand _ _ = do
     draws <- get
     put $ tail draws
