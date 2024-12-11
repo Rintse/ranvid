@@ -22,11 +22,11 @@ randomSeed = do
 data Options = Options
     { optVerbose    :: Bool
     , optSeedHash   :: String
-    , optInput      :: String }
+    , optInputFile  :: Maybe String }
 
 -- The default options
 defaultOpts :: IO Options
-defaultOpts = Options False <$> randomSeed <*> getContents
+defaultOpts = Options False <$> randomSeed <*> pure Nothing
 
 type ParseMonad a = IO (Either SomeException a)
 
@@ -38,7 +38,7 @@ readFile arg opt = do
         Left ex -> do
             putStrLn $ "Error opening file:\n" ++ show ex
             exitFailure
-        Right content -> return opt { optInput = content }
+        Right content -> return opt { optInputFile = Just content }
 
 -- Sets the verbosity
 readVerb :: Options -> IO Options

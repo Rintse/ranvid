@@ -1,29 +1,12 @@
-module Eval (evalTrip, evalExp) where
+module Eval (evalTrip) where
 
-import Data.Binary.Get ( runGet, getInt64host )
 import Control.Monad.State.Lazy
 import Syntax.Grammar.Abs
-import System.Random ( mkStdGen, uniformR )
 import Control.Applicative (liftA3)
-import Data.ByteString.Lazy.Char8 ( pack )
-
--- Lazily evaluated list of random draws
-randomList :: Int -> [Double]
-randomList seed = rec (mkStdGen seed)
-    where rec g = let (r, g2) = uniformR (-1, 1) g in r : rec g2
-
--- Get the first 4 bytes and interpret as a hash to be able to seed mkStdGen
-intFromHash :: String -> Int
-intFromHash s = fromIntegral $ runGet getInt64host (pack s)
 
 -- evaluate triple of expressions at (x,y), with rng initialized with the seed
-evalTrip :: Trip -> String -> Int -> Int -> (Double, Double, Double)
-evalTrip t seed x y = do
-    let randomDraws = randomList $ intFromHash seed
-    evalState (evalTrip' t x y) randomDraws
-
-evalTrip' :: Trip -> Int -> Int -> State [Double] (Double, Double, Double)
-evalTrip' (Triple a b c) x y = liftA3 (,,) 
+evalTrip :: Trip -> Int -> Int -> State [Double] (Double, Double, Double)
+evalTrip (Triple a b c) x y = liftA3 (,,) 
     (evalExp a x y) (evalExp b x y) (evalExp c x y)
 
 -- general expressions
