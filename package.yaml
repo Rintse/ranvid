@@ -52,6 +52,7 @@ library:
   - Syntax.Grammar.Par
   - Syntax.Grammar.Lex
   - Syntax.Grammar.Abs
+  - Syntax.Grammar.ErrM
   - Syntax.Grammar.Print
 
 

@@ -12,7 +12,7 @@ parse s = do
     case pTrip ts of
         Left r -> do
             putStrLn $ "Parse failed: " ++ r
-            putStr $ "Tokens still in stream:\n" ++ show ts
+            putStrLn $ "Tokens still in stream:\n" ++ show ts
             exitFailure
         Right r -> do
             putStr "Parse successful"
