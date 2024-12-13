@@ -35,12 +35,12 @@ library
       Eval
       Gen
       Lib
-      Syntax.Grammar.ErrM
       Syntax.Grammar.Skel
       Syntax.Parse
       Syntax.Grammar.Par
       Syntax.Grammar.Lex
       Syntax.Grammar.Abs
+      Syntax.Grammar.ErrM
       Syntax.Grammar.Print
   other-modules:
       Paths_ranvid
@@ -49,6 +49,7 @@ library
       Syntax.Grammar.Par
       Syntax.Grammar.Lex
       Syntax.Grammar.Abs
+      Syntax.Grammar.ErrM
       Syntax.Grammar.Print
   hs-source-dirs:
       src
@@ -60,8 +61,10 @@ library
     , binary
     , bytestring
     , generic-random
+    , inflist
     , mtl
     , random
+    , recursion-schemes
   default-language: Haskell2010
 
 executable ranvid-exe
@@ -80,7 +83,9 @@ executable ranvid-exe
     , binary
     , bytestring
     , generic-random
+    , inflist
     , mtl
     , random
     , ranvid
+    , recursion-schemes
   default-language: Haskell2010

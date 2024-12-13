@@ -7,6 +7,7 @@ import Eval
 import Args ( getOpts, Options(..) )
 import Gen
 
+import Data.InfList ( InfList(..) )
 import Data.Binary.Get ( runGet, getInt64host )
 import Data.ByteString.Lazy.Char8 ( pack )
 import System.Random ( mkStdGen, uniformR )
@@ -17,7 +18,7 @@ defaultCanvasSize :: (Int, Int)
 defaultCanvasSize = (3, 3)
 
 showTrip :: (Double, Double, Double) -> String
-showTrip (r,b,g) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
+showTrip (r,g,b) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
 
 -- A 2d list where each element is a tuple of its coordinates
 canvas :: (Int, Int) -> [[(Int, Int)]]
@@ -27,12 +28,12 @@ defaultCanvas :: [[(Int, Int)]]
 defaultCanvas = canvas defaultCanvasSize
 
 -- Lazily evaluated list of random draws
-randomList :: String -> [Double]
+randomList :: String -> InfList Double
 randomList seed = do
     -- Get first 4 bytes and interpret as an int to be able to seed mkStdGen
     let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
     rec (mkStdGen $ intFromHash seed)
-    where rec g = let (r, g2) = uniformR (-1, 1) g in r : rec g2
+    where rec g = let (r, g2) = uniformR (-1, 1) g in r ::: rec g2
 
 main :: IO ()
 main = do
@@ -54,5 +55,5 @@ main = do
     let rgbs = evalState (mapM sequence stateMCanvas) randomDraws
 
     putStrLn "Evaluated result:"
-    mapM_ (mapM_ (print . showTrip)) rgbs
+    (mapM_.mapM_) (putStrLn . showTrip) rgbs
     putStrLn "done."

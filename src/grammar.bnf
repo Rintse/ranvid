@@ -5,6 +5,9 @@ comment     "#" ;
 coercions Exp 5 ;
 coercions BExp 3 ;
 
+-- TODO: incorporate this custom double in the [-1, 1] interval
+-- token UnitDouble  (('0' | '1') '.' digit+ ('e' '-'? digit+)?) ;
+
 XVar.       Var     ::= "x" ;
 YVar.       Var     ::= "y" ;
 Val.        DVal    ::= Double ;
