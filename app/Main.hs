@@ -21,23 +21,18 @@ showTrip (r,b,g) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
 
 -- A 2d list where each element is a tuple of its coordinates
 canvas :: (Int, Int) -> [[(Int, Int)]]
-canvas (size_x, size_y) = map (zip [0..size_x] . replicate size_x) [0..size_y]
+canvas (size_x, size_y) = map (zip [0..size_x-1] . replicate size_x) [0..size_y-1]
 
 defaultCanvas :: [[(Int, Int)]]
 defaultCanvas = canvas defaultCanvasSize
 
--- Get the first 4 bytes and interpret as a hash to be able to seed mkStdGen
-intFromHash :: String -> Int
-intFromHash s = fromIntegral $ runGet getInt64host (pack s)
-
 -- Lazily evaluated list of random draws
-randomList :: Int -> [Double]
-randomList seed = rec (mkStdGen seed)
+randomList :: String -> [Double]
+randomList seed = do
+    -- Get first 4 bytes and interpret as an int to be able to seed mkStdGen
+    let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
+    rec (mkStdGen $ intFromHash seed)
     where rec g = let (r, g2) = uniformR (-1, 1) g in r : rec g2
-
--- runCanvas :: [[(Int, Int)]] -> String -> [[(Double, Double, Double)]]
--- runCanvas c seed = do
---     let randomDraws = randomList $ intFromHash seed
 
 main :: IO ()
 main = do
@@ -54,7 +49,7 @@ main = do
     putStrLn $ printTree prog
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
 
-    let randomDraws = randomList $ intFromHash seed
+    let randomDraws = randomList seed
     let stateMCanvas = (map.map) (uncurry (evalTrip prog)) defaultCanvas
     let rgbs = evalState (mapM sequence stateMCanvas) randomDraws
 
