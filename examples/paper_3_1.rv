@@ -1,0 +1,7 @@
+# The expression for Figure 2(b) in the original paper:
+# http://users.ece.cmu.edu/~adrian/projects/validation/validation.pdf
+
+{ if (x * y > 0.0) then x else x % y
+; if (x * y > 0.0) then y else x % y
+; if (x * y > 0.0) then 1.0 else x % y
+}
