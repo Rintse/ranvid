@@ -2,7 +2,7 @@ module Eval (evalTrip) where
 
 import Control.Monad.State.Lazy
 import Syntax.Grammar.Abs
-import Control.Applicative (liftA3)
+import Control.Applicative (liftA3, liftA2)
 import Data.InfList (InfList(..))
 import Debug.Trace (trace)
 

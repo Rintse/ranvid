@@ -8,7 +8,7 @@
 # A snapshot resolver dictates the compiler version and the set of packages
 # to be used for project dependencies. For example:
 #
-# snapshot: lts-22.28
+snapshot: lts-21.7
 # snapshot: nightly-2024-07-05
 # snapshot: ghc-9.6.6
 #
@@ -17,8 +17,8 @@
 #
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
-snapshot:
-  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
+# snapshot:
+#   url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -40,9 +40,10 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
-extra-deps: [
-  "inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089"
-]
+extra-deps:
+  - inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
+  - hip-1.5.6.0@sha256:296c55622f62485422c0a593c7306af1a5abf8ba9f866dcdffc281b01eba65d7,6988
+  - repa-3.4.2.0
 
 # Override default flag values for project packages and extra-deps
 # flags: {}
@@ -70,3 +71,8 @@ extra-deps: [
 
 custom-preprocessor-extensions:
 - bnfc
+
+# allow-newer: true
+allow-newer-deps: 
+- repa
+install-ghc: true
