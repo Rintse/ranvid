@@ -14,7 +14,7 @@ import GHC.Generics (Generic)
 import Control.Monad
 
 maxExpDepth :: Int
-maxExpDepth = 20
+maxExpDepth = 3
 
 
 deriving instance Generic Var

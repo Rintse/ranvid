@@ -13,7 +13,7 @@ printableChars :: (Int, Int)
 printableChars = (48, 121)
 
 defaultCanvasSize :: (Int, Int)
-defaultCanvasSize = (500, 500)
+defaultCanvasSize = (3, 3)
 
 randomSeed :: IO String
 randomSeed = do

@@ -43,20 +43,26 @@ runEval evalM size seed = do
     let stateM = runReaderT toEval size
     result <- evalStateT stateM $ randomList seed
 
+    putStrLn "PRE SCALE"
+    putRgbs result
+
     -- The arithmetic operations are defined on [-1, 1]
     -- We need to convert to the required [0, 1] interval for rgb values
     let scale x = (x + 1) / 2
     let scaled = (map.map) (\(r, g, b) -> (scale r, scale g, scale b)) result
 
+    putStrLn "POST SCALE"
+    putRgbs result
+
     -- After this point, all the values should be in the [0, 1] interval
-    let invalids = concatMap getInvalids scaled where 
+    let invalids = concatMap getInvalids scaled where
             getInvalids l = [ p | p <- l, isInvalidPixel p ]
             isInvalidPixel (r, g, b) = invalid r || invalid g || invalid b
             invalid a = a < 0 || a > 1
 
-    -- unless (null invalids) $
-    --     putStrLn $ "WARNING: Found invalid RGB values: \n  - "
-    --     ++ intercalate "\n  - " (map show invalids)
+    unless (null invalids) $
+        putStrLn $ "WARNING: Found invalid RGB values: \n  - "
+        ++ intercalate "\n  - " (map show invalids)
 
     return scaled
 
@@ -91,8 +97,12 @@ evalExp (Sin e) x y = sin <$> evalExp e x y
 evalExp (Cos e) x y = cos <$> evalExp e x y
 evalExp (Mul e1 e2) x y = liftA2 (*) (evalExp e1 x y) (evalExp e2 x y)
 evalExp (Div e1 e2) x y = liftA2 divUnit (evalExp e1 x y) (evalExp e2 x y)
-    where divUnit a b = if a < b then a / b else b / a
-evalExp (Mod e1 e2) x y = liftA2 mod' (evalExp e1 x y) (evalExp e2 x y)
+    where divUnit a b
+            | a == 0 && b == 0 = 0
+            | abs a < abs b = a / b
+            | otherwise = b / a
+evalExp (Mod e1 e2) x y = liftA2 modUnit (evalExp e1 x y) (evalExp e2 x y)
+    where modUnit a b = if b == 0.0 then 0.0 else mod' a b
 evalExp (Add e1 e2) x y = liftA2 (\a b -> (a + b) / 2) (evalExp e1 x y) (evalExp e2 x y)
 evalExp (Sub e1 e2) x y = liftA2 (\a b -> (a - b) / 2) (evalExp e1 x y) (evalExp e2 x y)
 evalExp (Ite c e1 e2) x y = evalBExp c x y >>= evalIf
