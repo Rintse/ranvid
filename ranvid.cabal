@@ -61,6 +61,7 @@ library
     , binary
     , bytestring
     , generic-random
+    , hip
     , inflist
     , mtl
     , random
@@ -83,6 +84,7 @@ executable ranvid-exe
     , binary
     , bytestring
     , generic-random
+    , hip
     , inflist
     , mtl
     , random

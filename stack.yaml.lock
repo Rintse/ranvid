@@ -11,10 +11,23 @@ packages:
       size: 407
   original:
     hackage: inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
+- completed:
+    hackage: hip-1.5.6.0@sha256:296c55622f62485422c0a593c7306af1a5abf8ba9f866dcdffc281b01eba65d7,6988
+    pantry-tree:
+      sha256: d79395e6ec9caf1132a7e001f6fe9b8ebada31e0e52087a4a1a971e3f295a7f4
+      size: 7456
+  original:
+    hackage: hip-1.5.6.0@sha256:296c55622f62485422c0a593c7306af1a5abf8ba9f866dcdffc281b01eba65d7,6988
+- completed:
+    hackage: repa-3.4.2.0@sha256:855d4e0521f7bdb3ff9fcd331626166a0186dea3652808d555697322724bf7df,3559
+    pantry-tree:
+      sha256: db96c1cc8f15ad8aeaff7f7b886f1780dbd876f3c6d34452281192db2d51ba73
+      size: 2965
+  original:
+    hackage: repa-3.4.2.0
 snapshots:
 - completed:
-    sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
-    size: 720271
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
-  original:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/22/43.yaml
+    sha256: 23bb9bb355bfdb1635252e120a29b712f0d5e8a6c6a65c5ab5bd6692f46c438e
+    size: 640457
+    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/7.yaml
+  original: lts-21.7
