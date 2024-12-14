@@ -34,6 +34,7 @@ library
       Args
       Eval
       Gen
+      Image
       Lib
       Syntax.Grammar.Skel
       Syntax.Parse

@@ -12,6 +12,9 @@ import Data.Char
 printableChars :: (Int, Int)
 printableChars = (48, 121)
 
+defaultCanvasSize :: (Int, Int)
+defaultCanvasSize = (300, 300)
+
 randomSeed :: IO String
 randomSeed = do
     global_seed <- (randomIO :: IO Int)
@@ -21,12 +24,20 @@ randomSeed = do
 -- The option list
 data Options = Options
     { optVerbose    :: Bool
+    , optSize       :: (Int, Int)
     , optSeedHash   :: String
     , optInputFile  :: Maybe String }
 
 -- The default options
 defaultOpts :: IO Options
-defaultOpts = Options False <$> randomSeed <*> pure Nothing
+defaultOpts = do
+    seed <- randomSeed
+    return $ Options {
+        optVerbose = False,
+        optSize = defaultCanvasSize,
+        optSeedHash = seed,
+        optInputFile = Nothing
+    }
 
 type ParseMonad a = IO (Either SomeException a)
 
