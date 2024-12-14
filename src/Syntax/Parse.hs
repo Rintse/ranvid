@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveFunctor, DeriveFoldable, DeriveTraversable #-}
+{-# LANGUAGE DeriveTraversable #-}
 {-# LANGUAGE TemplateHaskell, TypeFamilies, LambdaCase #-}
 
 module Syntax.Parse (parse) where
@@ -13,7 +13,7 @@ makeBaseFunctor ''Exp
 getInvalidDoubles :: Trip -> [Double]
 getInvalidDoubles (Triple a b c) = checkExp a ++ checkExp b ++ checkExp c
     where checkExp = cata go where
-            go (EDValF (Val d)) = [d | not (d <= 1 && d >= -1)]
+            go (EDValF (Val d)) = [d | d < -1 || d > 1]
             go other = concat other
 
 -- Parses contents of given input file

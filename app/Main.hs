@@ -3,41 +3,23 @@ module Main (main) where
 import Syntax.Grammar.Abs
 import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse (parse)
-import Eval
+import Eval ( evalTrip, runEval, showRGBTup )
 import Args ( getOpts, Options(..) )
+import Image ( rgbsToImg )
+import Control.Concurrent
 import Gen
 
-import Data.InfList ( InfList(..) )
-import Data.Binary.Get ( runGet, getInt64host )
-import Data.ByteString.Lazy.Char8 ( pack )
-import System.Random ( mkStdGen, uniformR )
 import Test.QuickCheck
-import Control.Monad.State (evalState)
-
-defaultCanvasSize :: (Int, Int)
-defaultCanvasSize = (3, 3)
-
-showTrip :: (Double, Double, Double) -> String
-showTrip (r,g,b) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
+import Graphics.Image (displayImage)
 
 -- A 2d list where each element is a tuple of its coordinates
 canvas :: (Int, Int) -> [[(Int, Int)]]
-canvas (size_x, size_y) = map (zip [0..size_x-1] . replicate size_x) [0..size_y-1]
-
-defaultCanvas :: [[(Int, Int)]]
-defaultCanvas = canvas defaultCanvasSize
-
--- Lazily evaluated list of random draws
-randomList :: String -> InfList Double
-randomList seed = do
-    -- Get first 4 bytes and interpret as an int to be able to seed mkStdGen
-    let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
-    rec (mkStdGen $ intFromHash seed)
-    where rec g = let (r, g2) = uniformR (-1, 1) g in r ::: rec g2
+canvas (w, h) = map (zip [0..w-1] . replicate w) [0..h-1]
 
 main :: IO ()
 main = do
     Options { optVerbose = verb
+            , optSize = canvasSize
             , optInputFile = inputFile
             , optSeedHash = seed
             } <- getOpts
@@ -50,10 +32,13 @@ main = do
     putStrLn $ printTree prog
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
 
-    let randomDraws = randomList seed
-    let stateMCanvas = (map.map) (uncurry (evalTrip prog)) defaultCanvas
-    let rgbs = evalState (mapM sequence stateMCanvas) randomDraws
+    let stateMCanvas = (map.map) (uncurry (evalTrip prog)) (canvas canvasSize)
+    let canvasM = mapM sequence stateMCanvas -- collapse into one monad
+    rgbs <- runEval canvasM canvasSize seed -- run all with one random draws list
 
     putStrLn "Evaluated result:"
-    (mapM_.mapM_) (putStrLn . showTrip) rgbs
+    (mapM_.mapM_) (putStrLn . showRGBTup) rgbs
+
+    displayImage $ rgbsToImg rgbs
+    threadDelay $ 10 * 1000000 
     putStrLn "done."
