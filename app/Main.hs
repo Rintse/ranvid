@@ -3,7 +3,7 @@ module Main (main) where
 import Syntax.Grammar.Abs
 import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse (parse)
-import Eval ( evalTrip, runEval, showRGBTup )
+import Eval ( evalTrip, runEval )
 import Args ( getOpts, Options(..) )
 import Image ( rgbsToImg )
 import Control.Concurrent
@@ -36,9 +36,7 @@ main = do
     let canvasM = mapM sequence stateMCanvas -- collapse into one monad
     rgbs <- runEval canvasM canvasSize seed -- run all with one random draws list
 
-    putStrLn "Evaluated result:"
-    (mapM_.mapM_) (putStrLn . showRGBTup) rgbs
-
     displayImage $ rgbsToImg rgbs
-    threadDelay $ 10 * 1000000 
+    threadDelay $ 2 * 1000000 
+
     putStrLn "done."

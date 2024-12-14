@@ -5,7 +5,7 @@ comment     "#" ;
 coercions Exp 5 ;
 coercions BExp 3 ;
 
--- TODO: incorporate this custom double in the [-1, 1] interval
+-- TODO: incorporate this custom double in the [-1, 1] interval ?
 -- token UnitDouble  (('0' | '1') '.' digit+ ('e' '-'? digit+)?) ;
 
 XVar.       Var     ::= "x" ;
@@ -24,18 +24,20 @@ Sin.        Exp4    ::= "sin" "(" Exp5 ")";
 Cos.        Exp4    ::= "cos" "(" Exp5 ")";
 Mul.        Exp2    ::= Exp2 "*" Exp3 ;
 Div.        Exp2    ::= Exp2 "/" Exp3 ;
+Mod.        Exp2    ::= Exp2 "%" Exp3 ;
 Add.        Exp1    ::= Exp1 "+" Exp2 ;
+Sub.        Exp1    ::= Exp1 "-" Exp2 ;
+Ite.        Exp     ::= "if" "(" BExp ")" "then" Exp1 "else" Exp1 ;
 
 -- all of these are just for the if condition
-Eq.         BExp3   ::= Exp1 "==" Exp2 ;
-Lt.         BExp3   ::= Exp1 "<" Exp2 ;
-Gt.         BExp3   ::= Exp1 ">" Exp2 ;
-Neq.        BExp3   ::= Exp1 "!=" Exp2 ;
-Leq.        BExp3   ::= Exp1 "<=" Exp2 ;
-Geq.        BExp3   ::= Exp1 ">=" Exp2 ;
+Eq.         BExp3   ::= Exp "==" Exp ;
+Lt.         BExp3   ::= Exp "<" Exp ;
+Gt.         BExp3   ::= Exp ">" Exp ;
+Neq.        BExp3   ::= Exp "!=" Exp ;
+Leq.        BExp3   ::= Exp "<=" Exp ;
+Geq.        BExp3   ::= Exp ">=" Exp ;
 Not.        BExp2   ::= "!" BExp3 ;
 And.        BExp1   ::= BExp1 "and" BExp2 ;
 Or.         BExp    ::= BExp "or" BExp1 ;
 
-Ite.        Exp     ::= "if" "(" BExp ")" "then" Exp1 "else" Exp1 ;
-Triple.     Trip    ::= "{" Exp1 "," Exp1 "," Exp1 "}" ;
+Triple.     Trip    ::= "{" Exp ";" Exp ";" Exp "}" ;
