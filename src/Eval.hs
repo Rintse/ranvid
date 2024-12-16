@@ -105,11 +105,10 @@ evalTripM :: Trip -> EvalMonad (Double, Double, Double)
 evalTripM (Triple a b c) = liftA3 (,,) (evalExpM a) (evalExpM b) (evalExpM c)
 
 evalExpM :: Exp -> EvalMonad Double
--- These should have been substituted out by this point
--- TODO: make this an error?
 evalExpM (EVar XVar) = asks fst
 evalExpM (EVar YVar) = asks snd
-evalExpM Rand = trace "WARNING: INVALID" return 0
+-- TODO: make this an error?
+evalExpM Rand = trace "WARNING: Encountered 'Rand' in evaluation" return 0
 
 evalExpM (EDVal (Val d)) = return d
 evalExpM (Min e) = negate <$> evalExpM e
