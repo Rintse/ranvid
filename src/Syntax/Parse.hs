@@ -1,15 +1,11 @@
-{-# LANGUAGE DeriveTraversable #-}
-{-# LANGUAGE TemplateHaskell, TypeFamilies, LambdaCase #-}
-
 module Syntax.Parse (parse) where
 
 import Data.Functor.Foldable ( cata )
-import Data.Functor.Foldable.TH ( makeBaseFunctor )
 import Syntax.Grammar.Par
 import Syntax.Grammar.Abs
+import Syntax.AbsF
 import System.Exit
 
-makeBaseFunctor ''Exp
 getInvalidDoubles :: Trip -> [Double]
 getInvalidDoubles (Triple a b c) = checkExp a ++ checkExp b ++ checkExp c
     where checkExp = cata go where
