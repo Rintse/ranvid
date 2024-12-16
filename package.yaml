@@ -21,16 +21,20 @@ description: Please see the README on GitHub at <https://github.com/rintse/ranvi
 
 dependencies:
 - base >= 4.7 && < 5
+- split
+- parallel
 - mtl
 - hip
 - array
 - recursion-schemes
+- monadic-recursion-schemes
 - inflist
 - binary
 - random
 - bytestring
 - generic-random
 - QuickCheck
+- MonadRandom
 
 ghc-options:
 - -Wall
@@ -57,7 +61,6 @@ library:
   - Syntax.Grammar.Abs
   - Syntax.Grammar.ErrM
   - Syntax.Grammar.Print
-
 
 executables:
   ranvid-exe:

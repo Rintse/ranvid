@@ -1,42 +1,34 @@
 module Main (main) where
 
-import Syntax.Grammar.Abs
 import Syntax.Grammar.Print ( printTree )
-import Syntax.Parse (parse)
-import Eval ( evalTrip, runEval )
+import Syntax.Parse ( parse )
+import Eval ( generateRGBs, fillRands, putRGBs )
 import Args ( getOpts, Options(..) )
 import Image ( rgbsToImg )
 import Control.Concurrent
-import Gen
+import Gen ( genTrip )
 
-import Test.QuickCheck
-import Graphics.Image (displayImage)
-
--- A 2d list where each element is a tuple of its coordinates
-canvas :: (Int, Int) -> [[(Int, Int)]]
-canvas (w, h) = map (zip [0..w-1] . replicate w) [0..h-1]
+import Graphics.Image (displayImage, writeImage)
 
 main :: IO ()
 main = do
     Options { optVerbose = verb
             , optSize = canvasSize
+            , optParallel = parallel
             , optInputFile = inputFile
             , optSeedHash = seed
             } <- getOpts
 
-    prog <- case inputFile of
-            Just s -> parse s
-            Nothing -> generate (arbitrary :: Gen Trip)
-
-    putStrLn "Using the expression:"
-    putStrLn $ printTree prog
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
+    tripleRaw <- case inputFile of
+            Just s -> parse s
+            Nothing -> return $ genTrip seed
 
-    let stateMCanvas = (map.map) (uncurry (evalTrip prog)) (canvas canvasSize)
-    let canvasM = mapM sequence stateMCanvas -- collapse into one monad
-    rgbs <- runEval canvasM canvasSize seed -- run all with one random draws list
+    let triple = fillRands tripleRaw seed
+    putStrLn "Using the expression:"
+    putStrLn $ printTree triple
 
-    displayImage $ rgbsToImg rgbs
-    threadDelay $ 2 * 1000000 
+    let rgbs = generateRGBs triple canvasSize parallel
+    writeImage "out/test.png" $ rgbsToImg rgbs
 
     putStrLn "done."

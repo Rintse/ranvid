@@ -3,18 +3,22 @@
 -- TODO: make all of these not orphaned instances
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Gen (arbitrary) where
+module Gen (genTrip) where
 
 import Syntax.Grammar.Abs
 
 import Debug.Trace
 import Generic.Random
 import Test.QuickCheck
-import GHC.Generics (Generic)
+import GHC.Generics ( Generic )
 import Control.Monad
+import Data.Binary.Get ( runGet, getInt64host )
+import Data.ByteString.Lazy.Char8 ( pack )
+import Test.QuickCheck.Random ( mkQCGen )
+import Test.QuickCheck.Gen ( Gen(MkGen) )
 
-maxExpDepth :: Int
-maxExpDepth = 3
+maxDepth :: Int
+maxDepth = 300
 
 
 deriving instance Generic Var
@@ -37,15 +41,15 @@ leafGen = oneof
 
 instance Arbitrary BExp where
     arbitrary = genericArbitraryRec 
-        ( 0 -- Eq
-        % 1 -- Lt
-        % 1 -- Gt
-        % 0 -- Neq
-        % 1 -- Leq
-        % 1 -- Geq
-        % 1 -- Not
-        % 1 -- And
-        % 1 -- Or
+        ( 100 -- Eq
+        % 100 -- Lt
+        % 100 -- Gt
+        % 100 -- Neq
+        % 100 -- Leq
+        % 100 -- Geq
+        % 100 -- Not
+        % 100 -- And
+        % 100 -- Or
         % () )
 
 instance Arbitrary Exp where
@@ -62,11 +66,18 @@ instance Arbitrary Exp where
         % 100 -- Mod
         % 100 -- Add
         % 100 -- Sub
-        % 050 -- Ite
+        % 075 -- Ite
         % () )
         `withBaseCase` leafGen
 
 instance Arbitrary Trip where
     arbitrary = do 
-        let expGen = resize maxExpDepth (arbitrary :: Gen Exp)
+        let expGen = resize maxDepth (arbitrary :: Gen Exp)
         liftM3 Triple expGen expGen expGen
+
+-- |Generate a random triple with rng seeded to `seed`
+genTrip :: String -> Trip
+genTrip seed = runGen (arbitrary :: Gen Trip) where 
+        runGen (MkGen g) = g rng maxDepth
+        rng = mkQCGen $ intFromHash seed
+        intFromHash s = fromIntegral $ runGet getInt64host (pack s)
