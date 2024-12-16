@@ -1,17 +1,20 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE TypeFamilies, LambdaCase #-}
 
-module Eval ( runEval, evalTrip, RGBTup ) where
+module Eval ( RGBTup, putRGBs, generateRGBs, fillRands ) where
 
-import Control.Monad.State.Lazy
 import Syntax.Grammar.Abs
+import Syntax.AbsF
 import Control.Applicative ( liftA3, liftA2 )
-import Data.InfList (InfList(..))
 import Control.Monad.Reader
+import Control.Monad.Random
+import Data.Functor.Foldable.Monadic ( anaM, )
+import Data.Functor.Foldable( project )
 import Data.Binary.Get ( runGet, getInt64host )
+import Data.Functor ( (<&>) )
 import Data.ByteString.Lazy.Char8 ( pack )
-import Data.List ( intercalate )
-import System.Random ( mkStdGen, uniformR )
-import Data.Fixed (mod')
+import Data.Fixed ( mod' )
+import Control.Parallel.Strategies
 import Debug.Trace (trace)
 
 type RGBTup = (Double, Double, Double)
@@ -19,102 +22,122 @@ type RGBTup = (Double, Double, Double)
 showRGBTup :: RGBTup -> String
 showRGBTup (r,g,b) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
 
--- |A monad for pogram evaluation, containing:
--- - A reader with the image size, used to scale x and y values
--- - A State with a list of random draws
--- - An error monad to express evaluation failure
-newtype EvalMonad a = EvalMonad {
-    evalMonad :: ReaderT (Int, Int) (StateT (InfList Double) IO) a
-} deriving (    Functor, Applicative, Monad,
-                MonadReader (Int, Int),
-                MonadState (InfList Double))
-
-putRgbs :: [[RGBTup]] -> IO ()
-putRgbs rgbs = do
+putRGBs :: [[RGBTup]] -> IO ()
+putRGBs rgbs = do
     let putRow = mapM_ (putStrLn . showRGBTup)
     mapM_ (\x -> putRow x >> putStrLn "") rgbs
 
--- |Unpack the various levels of the `EvalMonad` and execute respective runners
--- Also scales the [-1, 1] values to be in the [0, 1] interval so that they
--- may be used directly as RGB values in image backends
-runEval :: EvalMonad [[RGBTup]] -> (Int, Int) -> String -> IO [[RGBTup]]
-runEval evalM size seed = do
-    let toEval = evalMonad evalM
-    let stateM = runReaderT toEval size
-    result <- evalStateT stateM $ randomList seed
+-- |A 2d list where each element is a tuple of its coordinates
+-- All the coordinates are normalized to lie within the [-1, 1] range
+canvas :: (Int, Int) -> [[(Double, Double)]]
+canvas (w, h) = do
+    let scaleCoord maxC c = (fromIntegral c / fromIntegral maxC) * 2 - 1
+    let widths = map (scaleCoord w) [0..w-1]
+    let heights = map (scaleCoord h) [0..h-1]
+    map (zip widths . replicate w) heights
 
-    putStrLn "PRE SCALE"
-    putRgbs result
+-- |Replace all the `Rand` occurences with a random double value 
+-- (seeded with `seed`)
+fillRands :: Trip -> String -> Trip
+fillRands (Triple a b c) seed = do
+    let g1 = mkStdGen $ intFromHash seed
+            where intFromHash s = fromIntegral $ runGet getInt64host (pack s)
+    let (ra, g2) = runRand (fillRandsM a) g1
+    let (rb, g3) = runRand (fillRandsM b) g2
+    let (rc, __) = runRand (fillRandsM c) g3
+    -- TODO: find a nicer way to chain these?
+    Triple ra rb rc
 
+-- Fill in `rand`s and recurse into `BExp`s (see `fillRandsBM`)
+fillRandsM :: Exp -> Rand StdGen Exp
+fillRandsM = anaM go where
+    go Rand = getRandomR (-1, 1) <&> EDValF . Val
+    go (Ite b e1 e2) = liftA3 IteF (fillRandsBM b) (return e1) (return e2)
+    go other = return (project other)
+
+-- The boolean expressions just need to recurse into the expressions again
+fillRandsBM :: BExp -> Rand StdGen BExp
+fillRandsBM = anaM $ \case
+    Eq e1 e2 -> liftA2 EqF (fillRandsM e1) (fillRandsM e2)
+    Lt e1 e2 -> liftA2 LtF (fillRandsM e1) (fillRandsM e2)
+    Gt e1 e2 -> liftA2 GtF (fillRandsM e1) (fillRandsM e2)
+    Neq e1 e2 -> liftA2 NeqF (fillRandsM e1) (fillRandsM e2)
+    Leq e1 e2 -> liftA2 LeqF (fillRandsM e1) (fillRandsM e2)
+    Geq e1 e2 -> liftA2 GeqF (fillRandsM e1) (fillRandsM e2)
+    other -> return $ project other
+
+-- |Generate a canvas for Triple `trip` with size `size`
+-- Runs in `p` parallel threads simultaneously
+-- Expects all `Rand` nodes to already have been substituted for `EDVal`s
+generateRGBs :: Trip -> (Int, Int) -> Int -> [[RGBTup]]
+generateRGBs trip size p = do 
+    let calcRow = map (evalTrip trip)
+    let calcRows = map calcRow (canvas size)
+    let strategy = if p > 1 then parListChunk p rdeepseq else rdeepseq
+    calcRows `using` strategy
+
+-- |A monad for pogram evaluation, containing:
+-- - A reader with the x and y values for this evaluation
+-- - IO for convenience during debugging
+newtype EvalMonad a = EvalMonad {
+    evalMonad :: Reader (Double, Double) a
+} deriving (Functor, Applicative, Monad, MonadReader (Double, Double))
+
+evalTrip :: Trip -> (Double, Double) -> RGBTup
+evalTrip trip coords = do
+    let toEval = evalMonad (evalTripM trip)
+    let result = runReader toEval coords
     -- The arithmetic operations are defined on [-1, 1]
     -- We need to convert to the required [0, 1] interval for rgb values
-    let scale x = (x + 1) / 2
-    let scaled = (map.map) (\(r, g, b) -> (scale r, scale g, scale b)) result
-
-    putStrLn "POST SCALE"
-    putRgbs result
-
+    let scaled = scalePixel result where 
+            scaleC c = (c + 1) / 2
+            scalePixel (r, g, b) = (scaleC r, scaleC g, scaleC b)
     -- After this point, all the values should be in the [0, 1] interval
-    let invalids = concatMap getInvalids scaled where
-            getInvalids l = [ p | p <- l, isInvalidPixel p ]
+    let isInvalid = isInvalidPixel scaled where
             isInvalidPixel (r, g, b) = invalid r || invalid g || invalid b
-            invalid a = a < 0 || a > 1
+            invalid c = c < 0 || c > 1
+    if isInvalid
+        then trace ("WARNING: Invalid RGB: " ++ showRGBTup scaled) scaled
+        else scaled
 
-    unless (null invalids) $
-        putStrLn $ "WARNING: Found invalid RGB values: \n  - "
-        ++ intercalate "\n  - " (map show invalids)
+evalTripM :: Trip -> EvalMonad (Double, Double, Double)
+evalTripM (Triple a b c) = liftA3 (,,) (evalExpM a) (evalExpM b) (evalExpM c)
 
-    return scaled
+evalExpM :: Exp -> EvalMonad Double
+-- These should have been substituted out by this point
+-- TODO: make this an error?
+evalExpM (EVar XVar) = asks fst
+evalExpM (EVar YVar) = asks snd
+evalExpM Rand = trace "WARNING: INVALID" return 0
 
-
--- |Lazily evaluated list of random draws
-randomList :: String -> InfList Double
-randomList seed = do
-    -- Get first 4 bytes and interpret as an int to be able to seed mkStdGen
-    let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
-    rec (mkStdGen $ intFromHash seed)
-    where rec g = let (r, g2) = uniformR (0, 1) g in r ::: rec g2
-
--- |evaluate triple of expressions at (x,y), with rng initialized with the seed
-evalTrip :: Trip -> Int -> Int -> EvalMonad (Double, Double, Double)
-evalTrip (Triple a b c) x y = liftA3 (,,)
-    (evalExp a x y) (evalExp b x y) (evalExp c x y)
-
--- |Rescale a coordinate `c` to be in the range [-1, 1] such that:
--- - (`c`= 0 ) maps to -1
--- - (`c`=`max`) maps to 1
-scaleCoord :: Int -> Int -> Double
-scaleCoord c maxC = ((fromIntegral c / fromIntegral maxC) * 2) - 1
-
-evalExp :: Exp -> Int -> Int -> EvalMonad Double
-evalExp (EVar XVar) x _ = asks (\(w, _) -> scaleCoord x (w-1))
-evalExp (EVar YVar) _ y = asks (\(_, h) -> scaleCoord y (h-1))
-evalExp (EDVal (Val d)) _ _ = return d
-evalExp Rand _ _ = get >>= (\(r ::: t) -> put t >> return r)
-evalExp (Min e) x y = negate <$> evalExp e x y
-evalExp (Sqrt e) x y = fmap (\a -> if a < 0 then sqrt (-a) else sqrt a) (evalExp e x y)
-evalExp (Sin e) x y = sin <$> evalExp e x y
-evalExp (Cos e) x y = cos <$> evalExp e x y
-evalExp (Mul e1 e2) x y = liftA2 (*) (evalExp e1 x y) (evalExp e2 x y)
-evalExp (Div e1 e2) x y = liftA2 divUnit (evalExp e1 x y) (evalExp e2 x y)
+evalExpM (EDVal (Val d)) = return d
+evalExpM (Min e) = negate <$> evalExpM e
+evalExpM (Sqrt e) = fmap sqrtPos (evalExpM e)
+    where sqrtPos a = if a < 0 then sqrt (-a) else sqrt a
+evalExpM (Sin e) = sin <$> evalExpM e
+evalExpM (Cos e) = cos <$> evalExpM e
+evalExpM (Mul e1 e2) = liftA2 (*) (evalExpM e1) (evalExpM e2)
+evalExpM (Div e1 e2) = liftA2 divUnit (evalExpM e1) (evalExpM e2)
     where divUnit a b
             | a == 0 && b == 0 = 0
             | abs a < abs b = a / b
             | otherwise = b / a
-evalExp (Mod e1 e2) x y = liftA2 modUnit (evalExp e1 x y) (evalExp e2 x y)
-    where modUnit a b = if b == 0.0 then 0.0 else mod' a b
-evalExp (Add e1 e2) x y = liftA2 (\a b -> (a + b) / 2) (evalExp e1 x y) (evalExp e2 x y)
-evalExp (Sub e1 e2) x y = liftA2 (\a b -> (a - b) / 2) (evalExp e1 x y) (evalExp e2 x y)
-evalExp (Ite c e1 e2) x y = evalBExp c x y >>= evalIf
-    where evalIf cond = if cond then evalExp e1 x y else evalExp e2 x y
+evalExpM (Mod e1 e2) = liftA2 modUnit (evalExpM e1) (evalExpM e2)
+    where modUnit a b = if b == 0 then 0 else a `mod'` b
+evalExpM (Add e1 e2) = liftA2 addUnit (evalExpM e1) (evalExpM e2)
+    where addUnit a b = (a + b) / 2
+evalExpM (Sub e1 e2) = liftA2 subUnit (evalExpM e1) (evalExpM e2)
+    where subUnit a b = (a - b) / 2
+evalExpM (Ite c e1 e2) = evalBExp c >>= evalIf
+    where evalIf cond = if cond then evalExpM e1 else evalExpM e2
 
-evalBExp :: BExp -> Int -> Int -> EvalMonad Bool
-evalBExp (Eq e1 e2) x y = liftA2 (==) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Lt e1 e2) x y =  liftA2 (<) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Gt e1 e2) x y =  liftA2 (>) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Neq e1 e2) x y = liftA2 (/=) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Leq e1 e2) x y = liftA2 (<=) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Geq e1 e2) x y = liftA2 (>=) (evalExp e1 x y) (evalExp e2 x y)
-evalBExp (Not e) x y = not <$> evalBExp e x y
-evalBExp (And e1 e2) x y = liftA2 (&&) (evalBExp e1 x y) (evalBExp e2 x y)
-evalBExp (Or e1 e2) x y = liftA2 (||) (evalBExp e1 x y) (evalBExp e2 x y)
+evalBExp :: BExp -> EvalMonad Bool
+evalBExp (Eq e1 e2) = liftA2 (==) (evalExpM e1) (evalExpM e2)
+evalBExp (Lt e1 e2) = liftA2 (<) (evalExpM e1) (evalExpM e2)
+evalBExp (Gt e1 e2) = liftA2 (>) (evalExpM e1) (evalExpM e2)
+evalBExp (Neq e1 e2) = liftA2 (/=) (evalExpM e1) (evalExpM e2)
+evalBExp (Leq e1 e2) = liftA2 (<=) (evalExpM e1) (evalExpM e2)
+evalBExp (Geq e1 e2) = liftA2 (>=) (evalExpM e1) (evalExpM e2)
+evalBExp (Not e) = not <$> evalBExp e
+evalBExp (And e1 e2) = liftA2 (&&) (evalBExp e1) (evalBExp e2)
+evalBExp (Or e1 e2) = liftA2 (||) (evalBExp e1) (evalBExp e2)

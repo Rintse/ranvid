@@ -7,13 +7,15 @@ import System.IO as IO
 import System.Exit
 import System.Environment
 import System.Random ( uniformR, mkStdGen, randomIO )
+import Data.List.Split ( splitOn )
 import Data.Char
+import Text.Printf (printf)
 
 printableChars :: (Int, Int)
 printableChars = (48, 121)
 
 defaultCanvasSize :: (Int, Int)
-defaultCanvasSize = (3, 3)
+defaultCanvasSize = (300, 300)
 
 randomSeed :: IO String
 randomSeed = do
@@ -25,6 +27,7 @@ randomSeed = do
 data Options = Options
     { optVerbose    :: Bool
     , optSize       :: (Int, Int)
+    , optParallel   :: Int
     , optSeedHash   :: String
     , optInputFile  :: Maybe String }
 
@@ -35,6 +38,7 @@ defaultOpts = do
     return $ Options {
         optVerbose = False,
         optSize = defaultCanvasSize,
+        optParallel = 1,
         optSeedHash = seed,
         optInputFile = Nothing
     }
@@ -58,6 +62,20 @@ readVerb opt = return opt { optVerbose = True }
 readSeed :: String -> Options -> IO Options
 readSeed arg opt = return opt { optSeedHash = arg }
 
+readParallel :: String -> Options -> IO Options
+readParallel arg opt = return opt { optParallel = read arg }
+
+readSize :: String -> Options -> IO Options
+readSize arg opt = do
+    size <- case splitOn "x" arg of
+        [size1] -> return (read size1, read size1)
+        [size1, size2] -> return (read size1, read size2)
+        _ -> do
+            printf "WARNING: Invalid size '%s'\n" arg
+            uncurry (printf "Taking default size (%d, %d)\n") defaultCanvasSize
+            return defaultCanvasSize
+    return opt { optSize = size }
+
 -- Outputs a help message
 putHelp :: Options -> IO Options
 putHelp _ = do
@@ -73,6 +91,12 @@ options =
 
     , Option "s" ["seed-hash"] (ReqArg Args.readSeed "HASH")
         "The hash to seed the RNG with"
+
+    , Option "p" ["parallel"] (ReqArg Args.readParallel "NUMTHREADS")
+        "The amount of threads to run in parallel when evaluating the image"
+
+    , Option "S" ["size"] (ReqArg Args.readSize "SIZE")
+        "The size of the image to generate (X for sqaure of size X else XxY)"
 
     , Option "v" ["verbose"] (NoArg readVerb)
         "Enable verbose parsing"
