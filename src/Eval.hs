@@ -73,8 +73,9 @@ generateRGBs :: Trip -> (Int, Int) -> Int -> [[RGBTup]]
 generateRGBs trip size p = do 
     let calcRow = map (evalTrip trip)
     let calcRows = map calcRow (canvas size)
-    let strategy = if p > 1 then parListChunk p rdeepseq else rdeepseq
-    calcRows `using` strategy
+    if p > 1 
+        then calcRows `using` parListChunk p rdeepseq
+        else calcRows
 
 -- |A monad for pogram evaluation, containing:
 -- - A reader with the x and y values for this evaluation
