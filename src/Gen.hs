@@ -20,7 +20,6 @@ import Test.QuickCheck.Gen ( Gen(MkGen) )
 maxDepth :: Int
 maxDepth = 300
 
-
 deriving instance Generic Var
 deriving instance Generic Exp
 deriving instance Generic BExp

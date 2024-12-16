@@ -29,7 +29,8 @@ data Options = Options
     , optSize       :: (Int, Int)
     , optParallel   :: Int
     , optSeedHash   :: String
-    , optInputFile  :: Maybe String }
+    , optInputFile  :: Maybe String
+    , optOutputFile :: Maybe String }
 
 -- The default options
 defaultOpts :: IO Options
@@ -40,20 +41,24 @@ defaultOpts = do
         optSize = defaultCanvasSize,
         optParallel = 1,
         optSeedHash = seed,
-        optInputFile = Nothing
+        optInputFile = Nothing,
+        optOutputFile = Nothing
     }
 
 type ParseMonad a = IO (Either SomeException a)
 
 -- Reads a file if such an argument is given
-readFile :: String -> Options -> IO Options
-readFile arg opt = do
+readInFile :: String -> Options -> IO Options
+readInFile arg opt = do
     file <- try (IO.readFile arg) :: ParseMonad String
     case file of
         Left ex -> do
             putStrLn $ "Error opening file:\n" ++ show ex
             exitFailure
         Right content -> return opt { optInputFile = Just content }
+
+readOutFile :: String -> Options -> IO Options
+readOutFile arg opt = return opt { optOutputFile = Just arg }
 
 -- Sets the verbosity
 readVerb :: Options -> IO Options
@@ -86,8 +91,11 @@ putHelp _ = do
 -- The options as functions to be threaded through
 options :: [ OptDescr (Options -> IO Options) ]
 options =
-    [ Option "i" ["input"] (ReqArg Args.readFile "FILE")
+    [ Option "i" ["input"] (ReqArg Args.readInFile "FILE")
         "Input file"
+
+    , Option "o" ["output"] (ReqArg Args.readOutFile "FILE")
+        "Output file (opens generated image if not specified)"
 
     , Option "s" ["seed-hash"] (ReqArg Args.readSeed "HASH")
         "The hash to seed the RNG with"
