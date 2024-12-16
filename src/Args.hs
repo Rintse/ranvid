@@ -104,7 +104,7 @@ options =
         "The amount of threads to run in parallel when evaluating the image"
 
     , Option "S" ["size"] (ReqArg Args.readSize "SIZE")
-        "The size of the image to generate (X for sqaure of size X else XxY)"
+        "The size of the image to generate (X for square of size X, else WxH)"
 
     , Option "v" ["verbose"] (NoArg readVerb)
         "Enable verbose parsing"
