@@ -146,6 +146,7 @@ instance Print Syntax.Grammar.Abs.Exp where
     Syntax.Grammar.Abs.Sqrt exp -> prPrec i 4 (concatD [doc (showString "sqrt"), doc (showString "("), prt 5 exp, doc (showString ")")])
     Syntax.Grammar.Abs.Sin exp -> prPrec i 4 (concatD [doc (showString "sin"), doc (showString "("), prt 5 exp, doc (showString ")")])
     Syntax.Grammar.Abs.Cos exp -> prPrec i 4 (concatD [doc (showString "cos"), doc (showString "("), prt 5 exp, doc (showString ")")])
+    Syntax.Grammar.Abs.EPow exp -> prPrec i 4 (concatD [doc (showString "exp"), doc (showString "("), prt 5 exp, doc (showString ")")])
     Syntax.Grammar.Abs.Mul exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "*"), prt 3 exp2])
     Syntax.Grammar.Abs.Div exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "/"), prt 3 exp2])
     Syntax.Grammar.Abs.Mod exp1 exp2 -> prPrec i 2 (concatD [prt 2 exp1, doc (showString "%"), prt 3 exp2])

@@ -5,12 +5,13 @@ module Main (main) where
 
 import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse ( parse )
-import Eval ( generateRGBs, fillRands )
+import Eval ( generateRGBs, fillRands, countDepth )
 import Args ( getOpts, Options(..) )
 import Image ( rgbsToImg )
 import Gen ( genTrip )
 
 import Graphics.Image (writeImage, displayImageUsing, defaultViewer)
+import Syntax.Grammar.Abs (Trip(Triple), Exp (..))
 
 main :: IO ()
 main = do
@@ -28,6 +29,7 @@ main = do
             Nothing -> return $ genTrip seed
 
     let triple = fillRands tripleRaw seed
+
     putStrLn "Using the expression:"
     putStrLn $ printTree triple
 

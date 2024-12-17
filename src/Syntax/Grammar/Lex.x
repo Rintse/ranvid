@@ -159,13 +159,13 @@ resWords =
        (b "<=" 12
           (b ";" 10 (b "/" 9 N N) (b "<" 11 N N))
           (b ">" 14 (b "==" 13 N N) N)))
-    (b "sin" 22
-       (b "if" 19
+    (b "sin" 23
+       (b "exp" 19
           (b "cos" 17 (b "and" 16 N N) (b "else" 18 N N))
-          (b "rand()" 21 (b "or" 20 N N) N))
-       (b "y" 26
-          (b "then" 24 (b "sqrt" 23 N N) (b "x" 25 N N))
-          (b "}" 28 (b "{" 27 N N) N)))
+          (b "or" 21 (b "if" 20 N N) (b "rand()" 22 N N)))
+       (b "y" 27
+          (b "then" 25 (b "sqrt" 24 N N) (b "x" 26 N N))
+          (b "}" 29 (b "{" 28 N N) N)))
   where
   b s n = B bs (TS bs n)
     where

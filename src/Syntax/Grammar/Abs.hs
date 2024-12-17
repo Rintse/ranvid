@@ -15,6 +15,7 @@ data Exp
     | Sqrt Exp
     | Sin Exp
     | Cos Exp
+    | EPow Exp
     | Mul Exp Exp
     | Div Exp Exp
     | Mod Exp Exp
