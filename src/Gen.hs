@@ -16,9 +16,13 @@ import Data.Binary.Get ( runGet, getInt64host )
 import Data.ByteString.Lazy.Char8 ( pack )
 import Test.QuickCheck.Random ( mkQCGen )
 import Test.QuickCheck.Gen ( Gen(MkGen) )
+import Control.Applicative (Applicative(liftA2), liftA3)
 
-maxDepth :: Int
-maxDepth = 80
+maxRec :: Int
+maxRec = 12
+
+minRec :: Int
+minRec = 4
 
 deriving instance Generic Var
 deriving instance Generic Exp
@@ -31,68 +35,66 @@ instance Arbitrary Var where
     arbitrary = genericArbitrary uniform
 
 instance Arbitrary BExp where
-    arbitrary = genericArbitraryRec 
-        ( 100 -- Eq
-        % 100 -- Lt
-        % 100 -- Gt
-        % 100 -- Neq
-        % 100 -- Leq
-        % 100 -- Geq
-        % 100 -- Not
-        % 100 -- And
-        % 100 -- Or
-        % () ) `withBaseCase` genericArbitraryRec
-            ( 100 -- Eq
-            % 100 -- Lt
-            % 100 -- Gt
-            % 100 -- Neq
-            % 100 -- Leq
-            % 100 -- Geq
-            % 000 -- Not
-            % 000 -- And
-            % 000 -- Or
-            % () )
-
+    arbitrary = sized selectOnSize where
+        selectOnSize size
+            | size < maxRec = frequency $ stalksG size
+            | otherwise = frequency $ allNodesG size
+        -- When max depth is reached, recurse back into Exp with comparission 
+        -- operators, which will generate leafs immediately (hence `stalks`)
+        stalksG size = 
+            [ (50, resize (size + 1) $ liftA2 Eq expG expG)
+            , (50, resize (size + 1) $ liftA2 Lt expG expG)
+            , (50, resize (size + 1) $ liftA2 Gt expG expG)
+            , (50, resize (size + 1) $ liftA2 Neq expG expG)
+            , (50, resize (size + 1) $ liftA2 Leq expG expG)
+            , (50, resize (size + 1) $ liftA2 Geq expG expG)
+            ]
+        nonStalksG size = 
+            [ (100, resize (size + 1) $ Not <$> bexpG)
+            , (100, resize (size + 1) $ liftA2 And bexpG bexpG)
+            , (100, resize (size + 1) $ liftA2 Or bexpG bexpG)
+            ]
+        allNodesG size = stalksG size ++ nonStalksG size
+        expG = arbitrary :: Gen Exp
+        bexpG = arbitrary :: Gen BExp
 
 instance Arbitrary Exp where
-    arbitrary = genericArbitraryRec 
-        ( 000 -- EVar
-        % 000 -- EDVal
-        % 000 -- Rand
-        % 100 -- Min
-        % 100 -- Sqrt
-        % 100 -- Sin
-        % 100 -- Cos
-        % 100 -- Mul
-        % 100 -- Div
-        % 100 -- Mod
-        % 100 -- Add
-        % 100 -- Sub
-        % 075 -- Ite
-        % () ) `withBaseCase` genericArbitraryRec
-            ( 100 -- EVar
-            % 100 -- EDVal
-            % 100 -- Rand
-            % 000 -- Min
-            % 000 -- Sqrt
-            % 000 -- Sin
-            % 000 -- Cos
-            % 000 -- Mul
-            % 000 -- Div
-            % 000 -- Mod
-            % 000 -- Add
-            % 000 -- Sub
-            % 000 -- Ite
-            % () )
+    arbitrary = sized selectOnSize where
+        selectOnSize size
+            -- | size >= 0 && size < minRec = trace ("<min :: " ++ show size) (oneof $ nonLeafsG size)
+            -- | size >= minRec && size < maxRec = trace (">< :: " ++ show size) (oneof $ allNodesG size)
+            -- | otherwise = trace (">max :: " ++ show size) (oneof leafsG)
+            | size >= 0 && size < minRec = frequency $ nonLeafsG size
+            | size >= minRec && size < maxRec = frequency $ allNodesG size
+            | otherwise = frequency leafsG
+        leafsG =
+            [ (100, EVar <$> (arbitrary :: Gen Var))
+            , (100, EDVal <$> (arbitrary :: Gen DVal))
+            , (100, pure Rand)
+            ]
+        nonLeafsG size = 
+            [ (50, resize (size + 1) $ Min <$> expG)
+            , (50, resize (size + 1) $ Sqrt <$> expG)
+            , (50, resize (size + 1) $ Sin <$> expG)
+            , (50, resize (size + 1) $ Cos <$> expG)
+            , (50, resize (size + 1) $ EPow <$> expG)
+            , (50, resize (size + 1) $ liftA2 Mul expG expG)
+            , (50, resize (size + 1) $ liftA2 Div expG expG)
+            , (50, resize (size + 1) $ liftA2 Mod expG expG)
+            , (50, resize (size + 1) $ liftA2 Add expG expG)
+            , (50, resize (size + 1) $ liftA2 Sub expG expG)
+            , (50, resize (size + 1) $ liftA3 Ite bexpG expG expG)
+            ]
+        allNodesG size = leafsG ++ nonLeafsG size
+        expG = arbitrary :: Gen Exp
+        bexpG = arbitrary :: Gen BExp
 
 instance Arbitrary Trip where
-    arbitrary = do 
-        let expGen = resize maxDepth (arbitrary :: Gen Exp)
-        liftM3 Triple expGen expGen expGen
+    arbitrary = liftM3 Triple g g g where g = arbitrary :: Gen Exp
 
 -- |Generate a random triple with rng seeded to `seed`
 genTrip :: String -> Trip
-genTrip seed = runGen (arbitrary :: Gen Trip) where 
-        runGen (MkGen g) = g rng maxDepth
+genTrip seed = runGen (arbitrary :: Gen Trip) where
+        runGen (MkGen g) = g rng 0
         rng = mkQCGen $ intFromHash seed
         intFromHash s = fromIntegral $ runGet getInt64host (pack s)

@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeFamilies, LambdaCase #-}
 
-module Eval ( RGBTup, putRGBs, generateRGBs, fillRands ) where
+module Eval ( RGBTup, putRGBs, generateRGBs, fillRands, countDepth ) where
 
 import Syntax.Grammar.Abs
 import Syntax.AbsF
@@ -9,7 +9,7 @@ import Control.Applicative ( liftA3, liftA2 )
 import Control.Monad.Reader
 import Control.Monad.Random
 import Data.Functor.Foldable.Monadic ( anaM, )
-import Data.Functor.Foldable( project )
+import Data.Functor.Foldable( project, Recursive (cata) )
 import Data.Binary.Get ( runGet, getInt64host )
 import Data.Functor ( (<&>) )
 import Data.ByteString.Lazy.Char8 ( pack )
@@ -48,6 +48,11 @@ fillRands (Triple a b c) seed = do
     -- TODO: find a nicer way to chain these?
     Triple ra rb rc
 
+countDepth :: Exp -> Int
+countDepth = cata go where
+    go :: ExpF Int -> Int
+    go other = 1 + foldr max 0 other
+
 -- Fill in `rand`s and recurse into `BExp`s (see `fillRandsBM`)
 fillRandsM :: Exp -> Rand StdGen Exp
 fillRandsM = anaM go where
@@ -57,14 +62,14 @@ fillRandsM = anaM go where
 
 -- The boolean expressions just need to recurse into the expressions again
 fillRandsBM :: BExp -> Rand StdGen BExp
-fillRandsBM = anaM $ \case
-    Eq e1 e2 -> liftA2 EqF (fillRandsM e1) (fillRandsM e2)
-    Lt e1 e2 -> liftA2 LtF (fillRandsM e1) (fillRandsM e2)
-    Gt e1 e2 -> liftA2 GtF (fillRandsM e1) (fillRandsM e2)
-    Neq e1 e2 -> liftA2 NeqF (fillRandsM e1) (fillRandsM e2)
-    Leq e1 e2 -> liftA2 LeqF (fillRandsM e1) (fillRandsM e2)
-    Geq e1 e2 -> liftA2 GeqF (fillRandsM e1) (fillRandsM e2)
-    other -> return $ project other
+fillRandsBM = anaM go where
+    go (Eq e1 e2) = liftA2 EqF (fillRandsM e1) (fillRandsM e2)
+    go (Lt e1 e2) = liftA2 LtF (fillRandsM e1) (fillRandsM e2)
+    go (Gt e1 e2) = liftA2 GtF (fillRandsM e1) (fillRandsM e2)
+    go (Neq e1 e2) = liftA2 NeqF (fillRandsM e1) (fillRandsM e2)
+    go (Leq e1 e2) = liftA2 LeqF (fillRandsM e1) (fillRandsM e2)
+    go (Geq e1 e2) = liftA2 GeqF (fillRandsM e1) (fillRandsM e2)
+    go other = return $ project other
 
 -- |Generate a canvas for Triple `trip` with size `size`
 -- Runs in `p` parallel threads simultaneously
@@ -116,6 +121,7 @@ evalExpM (Sqrt e) = fmap sqrtPos (evalExpM e)
     where sqrtPos a = if a < 0 then sqrt (-a) else sqrt a
 evalExpM (Sin e) = sin <$> evalExpM e
 evalExpM (Cos e) = cos <$> evalExpM e
+evalExpM (EPow e) = expUnit <$> evalExpM e where expUnit x = (exp x / exp 1)
 evalExpM (Mul e1 e2) = liftA2 (*) (evalExpM e1) (evalExpM e2)
 evalExpM (Div e1 e2) = liftA2 divUnit (evalExpM e1) (evalExpM e2)
     where divUnit a b

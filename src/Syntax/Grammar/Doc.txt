@@ -23,9 +23,9 @@ followed by an unsigned or negative exponent.
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in grammar are the following:
-  | ``and`` | ``cos`` | ``else`` | ``if``
-  | ``or`` | ``sin`` | ``sqrt`` | ``then``
-  | ``x`` | ``y`` |  |
+  | ``and`` | ``cos`` | ``else`` | ``exp``
+  | ``if`` | ``or`` | ``sin`` | ``sqrt``
+  | ``then`` | ``x`` | ``y`` |
 
 The symbols used in grammar are the following:
   | ( | ) | rand() | -
@@ -58,6 +58,7 @@ All other symbols are terminals.
   |  |  **|**  | ``sqrt`` ``(`` //Exp5// ``)``
   |  |  **|**  | ``sin`` ``(`` //Exp5// ``)``
   |  |  **|**  | ``cos`` ``(`` //Exp5// ``)``
+  |  |  **|**  | ``exp`` ``(`` //Exp5// ``)``
   | //Exp5// | -> | ``(`` //Exp// ``)``
   |  |  **|**  | //Var//
   |  |  **|**  | //DVal//

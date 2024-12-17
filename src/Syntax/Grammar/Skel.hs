@@ -24,6 +24,7 @@ transExp x = case x of
   Syntax.Grammar.Abs.Sqrt exp -> failure x
   Syntax.Grammar.Abs.Sin exp -> failure x
   Syntax.Grammar.Abs.Cos exp -> failure x
+  Syntax.Grammar.Abs.EPow exp -> failure x
   Syntax.Grammar.Abs.Mul exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Div exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Mod exp1 exp2 -> failure x

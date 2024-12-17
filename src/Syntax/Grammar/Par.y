@@ -41,16 +41,17 @@ import Syntax.Grammar.Lex
   'and'    { PT _ (TS _ 16) }
   'cos'    { PT _ (TS _ 17) }
   'else'   { PT _ (TS _ 18) }
-  'if'     { PT _ (TS _ 19) }
-  'or'     { PT _ (TS _ 20) }
-  'rand()' { PT _ (TS _ 21) }
-  'sin'    { PT _ (TS _ 22) }
-  'sqrt'   { PT _ (TS _ 23) }
-  'then'   { PT _ (TS _ 24) }
-  'x'      { PT _ (TS _ 25) }
-  'y'      { PT _ (TS _ 26) }
-  '{'      { PT _ (TS _ 27) }
-  '}'      { PT _ (TS _ 28) }
+  'exp'    { PT _ (TS _ 19) }
+  'if'     { PT _ (TS _ 20) }
+  'or'     { PT _ (TS _ 21) }
+  'rand()' { PT _ (TS _ 22) }
+  'sin'    { PT _ (TS _ 23) }
+  'sqrt'   { PT _ (TS _ 24) }
+  'then'   { PT _ (TS _ 25) }
+  'x'      { PT _ (TS _ 26) }
+  'y'      { PT _ (TS _ 27) }
+  '{'      { PT _ (TS _ 28) }
+  '}'      { PT _ (TS _ 29) }
   L_doubl  { PT _ (TD $$)   }
 
 %%
@@ -86,6 +87,7 @@ Exp4
   | 'sqrt' '(' Exp5 ')' { Syntax.Grammar.Abs.Sqrt $3 }
   | 'sin' '(' Exp5 ')' { Syntax.Grammar.Abs.Sin $3 }
   | 'cos' '(' Exp5 ')' { Syntax.Grammar.Abs.Cos $3 }
+  | 'exp' '(' Exp5 ')' { Syntax.Grammar.Abs.EPow $3 }
 
 Exp5 :: { Syntax.Grammar.Abs.Exp }
 Exp5

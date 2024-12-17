@@ -22,6 +22,7 @@ Min.        Exp4    ::= "-" Exp5 ;
 Sqrt.       Exp4    ::= "sqrt" "(" Exp5 ")";
 Sin.        Exp4    ::= "sin" "(" Exp5 ")";
 Cos.        Exp4    ::= "cos" "(" Exp5 ")";
+EPow.       Exp4    ::= "exp" "(" Exp5 ")";
 Mul.        Exp2    ::= Exp2 "*" Exp3 ;
 Div.        Exp2    ::= Exp2 "/" Exp3 ;
 Mod.        Exp2    ::= Exp2 "%" Exp3 ;
