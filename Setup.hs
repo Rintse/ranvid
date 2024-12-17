@@ -11,6 +11,7 @@ main = defaultMainWithHooks simpleUserHooks
         _ <- system "bnfc -p Syntax -o src -d src/grammar.bnf"
         -- remove the generated test file
         _ <- system "rm -f src/Syntax/Grammar/Test.hs"
+        _ <- system "rm -f src/Syntax/Grammar/*.bak"
         preConf simpleUserHooks args configFlags
     }
 
