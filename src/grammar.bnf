@@ -3,22 +3,22 @@
 entrypoints Trip;
 comment     "#" ;
 coercions Exp 5 ;
-coercions BExp 4 ;
+coercions BExp 3 ;
 
 XVar.       Var     ::= "x" ;
 YVar.       Var     ::= "y" ;
 Val.        DVal    ::= Double ;
 
-EVar.       Exp6    ::= Var;
-EDVal.      Exp6    ::= DVal;
-Rand.       Exp6    ::= "rand()" ;
+EVar.       Exp5    ::= Var;
+EDVal.      Exp5    ::= DVal;
+Rand.       Exp5    ::= "rand()" ;
 
 -- in the paper:
 -- add, mul, sin, cos, exp, sqrt, division, mix
 Min.        Exp4    ::= "-" Exp5 ;
-Sqrt.       Exp4    ::= "sqrt(" Exp5 ")";
-Sin.        Exp4    ::= "sin(" Exp5 ")";
-Cos.        Exp4    ::= "cos(" Exp5 ")";
+Sqrt.       Exp4    ::= "sqrt" "(" Exp5 ")";
+Sin.        Exp4    ::= "sin" "(" Exp5 ")";
+Cos.        Exp4    ::= "cos" "(" Exp5 ")";
 Mul.        Exp2    ::= Exp2 "*" Exp3 ;
 Div.        Exp2    ::= Exp2 "/" Exp3 ;
 Add.        Exp1    ::= Exp1 "+" Exp2 ;
@@ -30,10 +30,9 @@ Gt.         BExp3   ::= Exp1 ">" Exp2 ;
 Neq.        BExp3   ::= Exp1 "!=" Exp2 ;
 Leq.        BExp3   ::= Exp1 "<=" Exp2 ;
 Geq.        BExp3   ::= Exp1 ">=" Exp2 ;
-
 Not.        BExp2   ::= "!" BExp3 ;
 And.        BExp1   ::= BExp1 "and" BExp2 ;
 Or.         BExp    ::= BExp "or" BExp1 ;
 
-Ite.        Exp     ::= "if" BExp "then" Exp1 "else" Exp1 ;
-Triple.     Trip     ::= "(" Exp "," Exp "," Exp ")" ;
+Ite.        Exp     ::= "if" "(" BExp ")" "then" Exp1 "else" Exp1 ;
+Triple.     Trip    ::= "{" Exp1 "," Exp1 "," Exp1 "}" ;
