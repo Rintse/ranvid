@@ -18,7 +18,7 @@ import Test.QuickCheck.Random ( mkQCGen )
 import Test.QuickCheck.Gen ( Gen(MkGen) )
 
 maxDepth :: Int
-maxDepth = 300
+maxDepth = 80
 
 deriving instance Generic Var
 deriving instance Generic Exp
@@ -29,14 +29,6 @@ instance Arbitrary DVal where
 
 instance Arbitrary Var where
     arbitrary = genericArbitrary uniform
-
--- Base case in generating expressions.
-leafGen :: Gen Exp
-leafGen = oneof 
-    [ EVar <$> (arbitrary :: Gen Var)
-    , EDVal <$> (arbitrary :: Gen DVal)
-    , pure Rand
-    ]
 
 instance Arbitrary BExp where
     arbitrary = genericArbitraryRec 
@@ -49,13 +41,24 @@ instance Arbitrary BExp where
         % 100 -- Not
         % 100 -- And
         % 100 -- Or
-        % () )
+        % () ) `withBaseCase` genericArbitraryRec
+            ( 100 -- Eq
+            % 100 -- Lt
+            % 100 -- Gt
+            % 100 -- Neq
+            % 100 -- Leq
+            % 100 -- Geq
+            % 000 -- Not
+            % 000 -- And
+            % 000 -- Or
+            % () )
+
 
 instance Arbitrary Exp where
     arbitrary = genericArbitraryRec 
-        ( 100 -- EVar
-        % 100 -- EDVal
-        % 100 -- Rand
+        ( 000 -- EVar
+        % 000 -- EDVal
+        % 000 -- Rand
         % 100 -- Min
         % 100 -- Sqrt
         % 100 -- Sin
@@ -67,7 +70,21 @@ instance Arbitrary Exp where
         % 100 -- Sub
         % 075 -- Ite
         % () )
-        `withBaseCase` leafGen
+        `withBaseCase` genericArbitraryRec
+            ( 100 -- EVar
+            % 100 -- EDVal
+            % 100 -- Rand
+            % 000 -- Min
+            % 000 -- Sqrt
+            % 000 -- Sin
+            % 000 -- Cos
+            % 000 -- Mul
+            % 000 -- Div
+            % 000 -- Mod
+            % 000 -- Add
+            % 000 -- Sub
+            % 000 -- Ite
+            % () )
 
 instance Arbitrary Trip where
     arbitrary = do 
