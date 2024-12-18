@@ -63,7 +63,7 @@ library:
   - Syntax.Grammar.Print
 
 executables:
-  ranvid-exe:
+  ranvid:
     main:                Main.hs
     source-dirs:         app
     ghc-options:
