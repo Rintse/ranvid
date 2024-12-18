@@ -35,6 +35,7 @@ library
       Eval
       Gen
       Image
+      Preprocess
       Syntax.AbsF
       Syntax.Grammar.Skel
       Syntax.Parse

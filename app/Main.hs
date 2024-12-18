@@ -5,7 +5,8 @@ module Main (main) where
 
 import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse ( parse )
-import Eval ( generateRGBs, fillRands, countDepth )
+import Eval ( generateRGBs )
+import Preprocess ( fillRands, simplifyTrip )
 import Args ( getOpts, Options(..) )
 import Image ( rgbsToImg )
 import Gen ( genTrip )
@@ -29,11 +30,14 @@ main = do
             Nothing -> return $ genTrip seed
 
     let triple = fillRands tripleRaw seed
-
     putStrLn "Using the expression:"
     putStrLn $ printTree triple
 
-    let rgbs = generateRGBs triple canvasSize parallel
+    let simplified = simplifyTrip triple
+    putStrLn "Simplified to:"
+    putStrLn $ printTree simplified
+
+    let rgbs = generateRGBs simplified canvasSize parallel
     let action = case outFile of 
             Nothing -> displayImageUsing defaultViewer True 
             Just filename -> writeImage filename
