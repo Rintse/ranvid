@@ -5,13 +5,14 @@ module Main (main) where
 
 import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse ( parse )
-import Eval ( generateRGBs, fillRands, countDepth )
+import Eval ( generateRGBs, checkRGBs )
+import Preprocess ( fillRands, simplifyTrip, showTripDepths, showTripSizes )
 import Args ( getOpts, Options(..) )
 import Image ( rgbsToImg )
 import Gen ( genTrip )
 
 import Graphics.Image (writeImage, displayImageUsing, defaultViewer)
-import Syntax.Grammar.Abs (Trip(Triple), Exp (..))
+import Text.Printf (printf)
 
 main :: IO ()
 main = do
@@ -30,10 +31,19 @@ main = do
 
     let triple = fillRands tripleRaw seed
 
-    putStrLn "Using the expression:"
+    printf "Using the expression [depths=%s, sizes=%s]:\n" 
+        (showTripDepths triple)
+        (showTripSizes triple)
     putStrLn $ printTree triple
 
-    let rgbs = generateRGBs triple canvasSize parallel
+    let simplified = simplifyTrip triple
+    printf "Simplified to [depths=%s, sizes=%s]:\n" 
+        (showTripDepths simplified)
+        (showTripSizes simplified)
+    putStrLn $ printTree simplified
+
+    let rgbs = generateRGBs simplified canvasSize parallel
+    checkRGBs rgbs
     let action = case outFile of 
             Nothing -> displayImageUsing defaultViewer True 
             Just filename -> writeImage filename

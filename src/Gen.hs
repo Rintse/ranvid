@@ -19,10 +19,10 @@ import Test.QuickCheck.Gen ( Gen(MkGen) )
 import Control.Applicative (Applicative(liftA2), liftA3)
 
 maxRec :: Int
-maxRec = 12
+maxRec = 2
 
 minRec :: Int
-minRec = 4
+minRec = 1
 
 deriving instance Generic Var
 deriving instance Generic Exp
