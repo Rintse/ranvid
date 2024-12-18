@@ -31,13 +31,13 @@ main = do
 
     let triple = fillRands tripleRaw seed
 
-    printf "Using the expression [depths=%s, sizes=%s]:\n" 
+    printf "Using the expression [depths=%s, sizes=%s]:" 
         (showTripDepths triple)
         (showTripSizes triple)
     putStrLn $ printTree triple
 
     let simplified = simplifyTrip triple
-    printf "Simplified to [depths=%s, sizes=%s]:\n" 
+    printf "Simplified to [depths=%s, sizes=%s]:" 
         (showTripDepths simplified)
         (showTripSizes simplified)
     putStrLn $ printTree simplified

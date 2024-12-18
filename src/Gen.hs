@@ -7,7 +7,6 @@ module Gen (genTrip) where
 
 import Syntax.Grammar.Abs
 
-import Debug.Trace
 import Generic.Random
 import Test.QuickCheck
 import GHC.Generics ( Generic )
@@ -16,13 +15,12 @@ import Data.Binary.Get ( runGet, getInt64host )
 import Data.ByteString.Lazy.Char8 ( pack )
 import Test.QuickCheck.Random ( mkQCGen )
 import Test.QuickCheck.Gen ( Gen(MkGen) )
-import Control.Applicative (Applicative(liftA2), liftA3)
 
 maxRec :: Int
-maxRec = 2
+maxRec = 11
 
 minRec :: Int
-minRec = 1
+minRec = 4
 
 deriving instance Generic Var
 deriving instance Generic Exp

@@ -43,13 +43,11 @@ showTripSizes (Triple a b c) = "("
 -- (seeded with `seed`)
 fillRands :: Trip -> String -> Trip
 fillRands (Triple a b c) seed = do
-    let g1 = mkStdGen $ intFromHash seed
-            where intFromHash s = fromIntegral $ runGet getInt64host (pack s)
-    let (ra, g2) = runRand (fillRandsM a) g1
-    let (rb, g3) = runRand (fillRandsM b) g2
-    let (rc, __) = runRand (fillRandsM c) g3
-    -- TODO: find a nicer way to chain these?
-    Triple ra rb rc
+    let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
+    let g = mkStdGen $ intFromHash seed
+    evalRand (tupSeq (fillRandsM a, fillRandsM b, fillRandsM c)) g where 
+        tupSeq = uncurry3 $ liftA3 Triple
+        uncurry3 f (x, y, z) = f x y z
 
 -- Fill in `rand`s and recurse into `BExp`s (see `fillRandsBM`)
 fillRandsM :: Exp -> Rand StdGen Exp
@@ -69,17 +67,17 @@ fillRandsBM = anaM go where
     go (Geq e1 e2) = liftA2 GeqF (fillRandsM e1) (fillRandsM e2)
     go other = return $ project other
 
-applyToDouble :: (Exp -> Exp) -> (Double -> Double) -> Exp -> Exp
-applyToDouble _ f (EDVal (Val a)) = EDVal (Val (f a))
-applyToDouble default' _ a = default' a
-
 applyDouble2
     :: (Exp -> Exp -> Exp)          -- Default if args were not doubles
     -> (Double -> Double -> Double) -- Function to apply if 2 doubles
-    -> Exp -> Exp                   -- Two expressions to evaluate
+    -> Exp -> Exp                   -- Two expressions to simplify
     -> Exp                          -- Potentially simplified expression
 applyDouble2 _ f (EDVal (Val a)) (EDVal (Val b)) = EDVal (Val (f a b))
 applyDouble2 default' _ a b = default' a b
+
+applyToDouble :: (Exp -> Exp) -> (Double -> Double) -> Exp -> Exp
+applyToDouble _ f (EDVal (Val a)) = EDVal (Val (f a))
+applyToDouble default' _ a = default' a
 
 simplifyExp :: Exp -> Exp
 simplifyExp (Min a) = applyToDouble Min negate (simplifyExp a)
@@ -98,41 +96,36 @@ simplifyExp (Ite a b c) = case simplifyBExp a of
 simplifyExp other = other
 
 applyToBool2
-    :: (Double -> Double -> Bool)   -- Function to apply if 2 doubles
+    :: (Exp -> Exp -> BExp)         -- Default if args were not doubles
+    -> (Double -> Double -> Bool)   -- Function to apply if 2 doubles
     -> Exp -> Exp                   -- Two expressions to evaluate
-    -> (Exp -> Exp -> BExp)         -- Defaut if args were not doubles
     -> Either BExp Bool             -- Simplified bexp
-applyToBool2 f (EDVal (Val a)) (EDVal (Val b)) _ = convertApply f a b
-    where convertApply f' a' b' = Right $ f' a' b'
-applyToBool2 _ a b default' = Left $ default' a b
+applyToBool2 _ f (EDVal (Val a)) (EDVal (Val b)) = Right $ f a b
+applyToBool2 default' _ a b = Left $ default' a b
 
 simplifyBExp :: BExp -> Either BExp Bool
-simplifyBExp (Eq a b) = applyToBool2 (==) (simplifyExp a) (simplifyExp b) Eq
-simplifyBExp (Lt a b) = applyToBool2 (<) (simplifyExp a) (simplifyExp b) Lt
-simplifyBExp (Gt a b) = applyToBool2 (>) (simplifyExp a) (simplifyExp b) Gt
-simplifyBExp (Neq a b) = applyToBool2 (/=) (simplifyExp a) (simplifyExp b) Neq
-simplifyBExp (Leq a b) = applyToBool2 (<=) (simplifyExp a) (simplifyExp b) Leq
-simplifyBExp (Geq a b) = applyToBool2 (>=) (simplifyExp a) (simplifyExp b) Geq
+simplifyBExp (Eq a b) = applyToBool2 Eq (==) (simplifyExp a) (simplifyExp b)
+simplifyBExp (Lt a b) = applyToBool2 Lt (<) (simplifyExp a) (simplifyExp b)
+simplifyBExp (Gt a b) = applyToBool2 Gt (>) (simplifyExp a) (simplifyExp b)
+simplifyBExp (Neq a b) = applyToBool2 Neq (/=) (simplifyExp a) (simplifyExp b)
+simplifyBExp (Leq a b) = applyToBool2 Leq (<=) (simplifyExp a) (simplifyExp b)
+simplifyBExp (Geq a b) = applyToBool2 Geq (>=) (simplifyExp a) (simplifyExp b)
 simplifyBExp (And a b) = case (simplifyBExp a, simplifyBExp b) of
-    -- No simplificaiton possible
     (Left ra, Left rb) -> Left $ And ra rb
+    (Right b1, Right b2) -> Right $ b1 && b2
     -- And identity law
     (Left _, Right False) -> Right False
     (Right False, Left _) -> Right False
     (Left ra, Right True) -> Left ra
     (Right True, Left rb) -> Left rb
-    -- Simplify actual bool values
-    (Right b1, Right b2) -> Right $ b1 && b2
 simplifyBExp (Or a b) = case (simplifyBExp a, simplifyBExp b) of
-    -- No simplificaiton possible
     (Left ra, Left rb) -> Left $ Or ra rb
+    (Right b1, Right b2) -> Right $ b1 && b2
     -- Or identity law
     (Left _, Right True) -> Right True
     (Right True, Left _) -> Right True
     (Left ra, Right False) -> Left ra
     (Right False, Left rb) -> Left rb
-    -- Simplify actual bool values
-    (Right b1, Right b2) -> Right $ b1 && b2
 simplifyBExp (Not a) = case simplifyBExp a of
     (Left r) -> Left $ Not r
     (Right b) -> Right $ not b
