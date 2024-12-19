@@ -45,9 +45,8 @@ fillRands :: Trip -> String -> Trip
 fillRands (Triple a b c) seed = do
     let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
     let g = mkStdGen $ intFromHash seed
-    evalRand (tupSeq (fillRandsM a, fillRandsM b, fillRandsM c)) g where 
-        tupSeq = uncurry3 $ liftA3 Triple
-        uncurry3 f (x, y, z) = f x y z
+    let toEval = liftA3 Triple (fillRandsM a) (fillRandsM b) (fillRandsM c)
+    evalRand toEval g
 
 -- Fill in `rand`s and recurse into `BExp`s (see `fillRandsBM`)
 fillRandsM :: Exp -> Rand StdGen Exp
