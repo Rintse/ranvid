@@ -1,9 +1,9 @@
 -- To be processed into a parser and lexer using BNFC
 
-entrypoints Trip;
+entrypoints Exp, Type;
 comment     "#" ;
-coercions Exp 5 ;
-coercions BExp 3 ;
+coercions Exp 7 ;
+coercions Type 2 ;
 
 -- TODO: incorporate this custom double in the [-1, 1] interval ?
 -- token UnitDouble  (('0' | '1') '.' digit+ ('e' '-'? digit+)?) ;
@@ -12,33 +12,43 @@ XVar.       Var     ::= "x" ;
 YVar.       Var     ::= "y" ;
 Val.        DVal    ::= Double ;
 
-EVar.       Exp5    ::= Var;
-EDVal.      Exp5    ::= DVal;
-Rand.       Exp5    ::= "rand()" ;
+EVar.       Exp10   ::= Var;
+EDVal.      Exp10   ::= DVal;
+Rand.       Exp10   ::= "rand()" ;
 
--- in the paper:
--- add, mul, sin, cos, exp, sqrt, division, mix
-Min.        Exp4    ::= "-" Exp5 ;
-Sqrt.       Exp4    ::= "sqrt" "(" Exp5 ")";
-Sin.        Exp4    ::= "sin" "(" Exp5 ")";
-Cos.        Exp4    ::= "cos" "(" Exp5 ")";
-EPow.       Exp4    ::= "exp" "(" Exp5 ")";
-Mul.        Exp2    ::= Exp2 "*" Exp3 ;
-Div.        Exp2    ::= Exp2 "/" Exp3 ;
-Mod.        Exp2    ::= Exp2 "%" Exp3 ;
-Add.        Exp1    ::= Exp1 "+" Exp2 ;
-Sub.        Exp1    ::= Exp1 "-" Exp2 ;
-Ite.        Exp     ::= "if" "(" BExp ")" "then" Exp1 "else" Exp1 ;
+InL.        Exp9    ::= "left" Exp10 ;
+InR.        Exp9    ::= "right" Exp10 ;
+Fst.        Exp9    ::= "fst" Exp10 ;
+Snd.        Exp9    ::= "snd" Exp10 ;
 
--- all of these are just for the if condition
-Eq.         BExp3   ::= Exp "==" Exp ;
-Lt.         BExp3   ::= Exp "<" Exp ;
-Gt.         BExp3   ::= Exp ">" Exp ;
-Neq.        BExp3   ::= Exp "!=" Exp ;
-Leq.        BExp3   ::= Exp "<=" Exp ;
-Geq.        BExp3   ::= Exp ">=" Exp ;
-Not.        BExp2   ::= "!" BExp3 ;
-And.        BExp1   ::= BExp1 "and" BExp2 ;
-Or.         BExp    ::= BExp "or" BExp1 ;
+Min.        Exp8    ::= "-" Exp9 ;
+Sqrt.       Exp8    ::= "sqrt" "(" Exp9 ")";
+Sin.        Exp8    ::= "sin" "(" Exp9 ")";
+Cos.        Exp8    ::= "cos" "(" Exp9 ")";
+EPow.       Exp8    ::= "exp" "(" Exp9 ")";
+Mul.        Exp6    ::= Exp6 "*" Exp7 ;
+Div.        Exp6    ::= Exp6 "/" Exp7 ;
+Mod.        Exp6    ::= Exp6 "%" Exp7 ;
+Add.        Exp5    ::= Exp5 "+" Exp6 ;
+Sub.        Exp5    ::= Exp5 "-" Exp6 ;
 
-Triple.     Trip    ::= "{" Exp ";" Exp ";" Exp "}" ;
+Eq.         Exp4    ::= Exp4 "==" Exp5 ;
+Lt.         Exp4    ::= Exp4 "<" Exp5 ;
+Gt.         Exp4    ::= Exp4 ">" Exp5 ;
+Neq.        Exp4    ::= Exp4 "!=" Exp5 ;
+Leq.        Exp4    ::= Exp4 "<=" Exp5 ;
+Geq.        Exp4    ::= Exp4 ">=" Exp5 ;
+Not.        Exp3    ::= "!" Exp4 ;
+And.        Exp2    ::= Exp2 "and" Exp3 ;
+Or.         Exp2    ::= Exp2 "or" Exp3 ;
+
+Tup.        Exp1    ::= "(" Exp1 "," Exp2")" ;
+Ite.        Exp     ::= "if" "(" Exp ")" "then" Exp1 "else" Exp1 ;
+Match.      Exp     ::= "match" Exp "{" "L" Ident "->" Exp1 ";" "R" Ident "->" Exp1 "}" ;
+
+-- Separate grammar for types
+TDouble.    Type2   ::= "Double" ;
+TInt.       Type2   ::= "Int" ;
+TBool.      Type2   ::= "Bool" ;
+TProd.      Type1   ::= Type1 "x" Type2 ;
+TCoprod.    Type1   ::= Type1 "+" Type2 ;

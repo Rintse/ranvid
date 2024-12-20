@@ -3,7 +3,7 @@
 -- TODO: make all of these not orphaned instances
 {-# OPTIONS -fno-warn-orphans #-}
 
-module Gen (genTrip) where
+module Gen (genExp) where
 
 import Syntax.Grammar.Abs
 
@@ -24,7 +24,6 @@ minRec = 4
 
 deriving instance Generic Var
 deriving instance Generic Exp
-deriving instance Generic BExp
 
 instance Arbitrary DVal where
     arbitrary = Val <$> choose (-1, 1)
@@ -32,30 +31,30 @@ instance Arbitrary DVal where
 instance Arbitrary Var where
     arbitrary = genericArbitrary uniform
 
-instance Arbitrary BExp where
-    arbitrary = sized selectOnSize where
-        selectOnSize size
-            | size < maxRec = frequency $ stalksG size
-            | otherwise = frequency $ allNodesG size
-        -- When max depth is reached, recurse back into Exp with comparission 
-        -- operators, which will generate leafs immediately (hence `stalks`)
-        stalksG size = 
-            [ (050, resize (size + 1) $ Eq  <$> expG <*> expG)
-            , (050, resize (size + 1) $ Lt  <$> expG <*> expG)
-            , (050, resize (size + 1) $ Gt  <$> expG <*> expG)
-            , (050, resize (size + 1) $ Neq <$> expG <*> expG)
-            , (050, resize (size + 1) $ Leq <$> expG <*> expG)
-            , (050, resize (size + 1) $ Geq <$> expG <*> expG)
-            ]
-        nonStalksG size = 
-            [ (100, resize (size + 1) $ Not <$> bexpG)
-            , (100, resize (size + 1) $ And <$> bexpG <*> bexpG)
-            , (100, resize (size + 1) $ Or  <$> bexpG <*> bexpG)
-            ]
-        allNodesG size = stalksG size ++ nonStalksG size
-        expG = arbitrary :: Gen Exp
-        bexpG = arbitrary :: Gen BExp
-
+-- instance Arbitrary BExp where
+--     arbitrary = sized selectOnSize where
+--         selectOnSize size
+--             | size < maxRec = frequency $ stalksG size
+--             | otherwise = frequency $ allNodesG size
+--         -- When max depth is reached, recurse back into Exp with comparission 
+--         -- operators, which will generate leafs immediately (hence `stalks`)
+--         stalksG size = 
+--             [ (050, resize (size + 1) $ Eq  <$> expG <*> expG)
+--             , (050, resize (size + 1) $ Lt  <$> expG <*> expG)
+--             , (050, resize (size + 1) $ Gt  <$> expG <*> expG)
+--             , (050, resize (size + 1) $ Neq <$> expG <*> expG)
+--             , (050, resize (size + 1) $ Leq <$> expG <*> expG)
+--             , (050, resize (size + 1) $ Geq <$> expG <*> expG)
+--             ]
+--         nonStalksG size = 
+--             [ (100, resize (size + 1) $ Not <$> bexpG)
+--             , (100, resize (size + 1) $ And <$> bexpG <*> bexpG)
+--             , (100, resize (size + 1) $ Or  <$> bexpG <*> bexpG)
+--             ]
+--         allNodesG size = stalksG size ++ nonStalksG size
+--         expG = arbitrary :: Gen Exp
+--         bexpG = arbitrary :: Gen BExp
+--
 instance Arbitrary Exp where
     arbitrary = sized selectOnSize where
         selectOnSize size
@@ -81,18 +80,14 @@ instance Arbitrary Exp where
             , (050, resize (size + 1) $ Mod <$> expG <*> expG)
             , (050, resize (size + 1) $ Add <$> expG <*> expG)
             , (050, resize (size + 1) $ Sub <$> expG <*> expG)
-            , (050, resize (size + 1) $ Ite <$> bxpG <*> expG <*> expG)
+            , (050, resize (size + 1) $ Ite <$> expG <*> expG <*> expG)
             ]
         allNodesG size = leafsG ++ nonLeafsG size
         expG = arbitrary :: Gen Exp
-        bxpG = arbitrary :: Gen BExp
 
-instance Arbitrary Trip where
-    arbitrary = liftM3 Triple g g g where g = arbitrary :: Gen Exp
-
--- |Generate a random triple with rng seeded to `seed`
-genTrip :: String -> Trip
-genTrip seed = runGen (arbitrary :: Gen Trip) where
+-- |Generate a random expression of type `t` with rng seeded to `seed`
+genExp :: Type -> String -> Exp
+genExp t seed = runGen (arbitrary :: Gen Exp) where
         runGen (MkGen g) = g rng 0
         rng = mkQCGen $ intFromHash seed
         intFromHash s = fromIntegral $ runGet getInt64host (pack s)

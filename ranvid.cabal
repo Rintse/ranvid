@@ -39,6 +39,7 @@ library
       Syntax.AbsF
       Syntax.Grammar.Skel
       Syntax.Parse
+      Value
       Syntax.Grammar.Par
       Syntax.Grammar.Lex
       Syntax.Grammar.Abs

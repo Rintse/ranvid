@@ -1,11 +1,10 @@
-{-# LANGUAGE TypeFamilies #-}
-
 module Eval (
     RGBTup, generateRGBs, checkRGBs,
     expUnit, sqrtPos, modUnit, addUnit, subUnit, divUnit,
 ) where
 
 import Syntax.Grammar.Abs
+import Value ( Value(..) )
 
 import Control.Applicative ( liftA3, liftA2 )
 import Control.Monad.Reader
@@ -29,12 +28,23 @@ canvas (w, h) = do
     let heights = map (scaleCoord h) [0..h-1]
     map (zip widths . replicate w) heights
 
--- |Generate a canvas for Triple `trip` with size `size`
+-- The arithmetic operations are defined on [-1, 1]
+-- We need to convert to the required [0, 1] interval for rgb values
+scalePixel :: (Double, Double, Double) -> (Double, Double, Double)
+scalePixel = f3 (\c -> (c + 1) / 2) where f3 f (a, b, c) = (f a, f b, f c)
+
+valToRGB :: Value -> RGBTup
+valToRGB (VPair (VDVal r) (VPair (VDVal g) (VDVal b))) = scalePixel (r, g, b)
+valToRGB (VPair (VPair (VDVal r) (VDVal g)) (VDVal b)) = scalePixel (r, g, b)
+valToRGB _ = (0.0, 0.0, 0.0)
+
+-- |Generate a canvas for expression `e` with size `size`
 -- Runs in `p` parallel threads simultaneously
 -- Expects all `Rand` nodes to already have been substituted for `EDVal`s
-generateRGBs :: Trip -> (Int, Int) -> Int -> [[RGBTup]]
-generateRGBs trip size p = do
-    let calcRow = map (evalTrip trip)
+generateRGBs :: Exp -> (Int, Int) -> Int -> [[RGBTup]]
+generateRGBs e size p = do
+    let calcRow = map ( valToRGB . evalExp e ) where
+            evalExp e' = runReader (evalExpM e')
     let calcRows = map calcRow (canvas size)
     if p > 1
         then calcRows `using` parListChunk p rdeepseq
@@ -42,27 +52,14 @@ generateRGBs trip size p = do
 
 checkRGBs :: [[RGBTup]] -> IO ()
 checkRGBs rgbs = do
-    let invalids = filter isInvalidPixel (concat rgbs) where
+    let invalids = concatMap (filter isInvalidPixel) rgbs where
             isInvalidPixel (r, g, b) = invalid r || invalid g || invalid b
             invalid c = c < 0 || c > 1
 
-    unless (null invalids) $ do 
+    unless (null invalids) $ do
         putStrLn $ "ERROR: Invalid RGB values: \n  - "
             ++ intercalate "\n  - " (map showRGBTup invalids)
         exitFailure
-
--- |Evaluate the triple `trip` at coordinates `coords`
-evalTrip :: Trip -> (Double, Double) -> RGBTup
-evalTrip trip coords = do
-    let result = runReader (evalTripM trip) coords
-    -- The arithmetic operations are defined on [-1, 1]
-    -- We need to convert to the required [0, 1] interval for rgb values
-    scalePixel result where
-        scaleC c = (c + 1) / 2
-        scalePixel (r, g, b) = (scaleC r, scaleC g, scaleC b)
-
-evalTripM :: Trip -> Reader (Double, Double) (Double, Double, Double)
-evalTripM (Triple a b c) = liftA3 (,,) (evalExpM a) (evalExpM b) (evalExpM c)
 
 -- Custom operators that go ([-1, 1], [-1, 1]) -> [-1, 1] or that filter
 -- out some undefined inputs and just return 0 in that case
@@ -82,32 +79,32 @@ divUnit a b
     | abs a < abs b = a / b
     | otherwise = b / a
 
-evalExpM :: Exp -> Reader (Double, Double) Double
-evalExpM (EVar XVar) = asks fst
-evalExpM (EVar YVar) = asks snd
--- TODO: make this an error?
-evalExpM Rand = trace "WARNING: Encountered 'Rand' in evaluation" return 0
-evalExpM (EDVal (Val d)) = return d
-evalExpM (Min e) = negate <$> evalExpM e
-evalExpM (Sqrt e) = fmap sqrtPos (evalExpM e)
-evalExpM (Sin e) = sin <$> evalExpM e
-evalExpM (Cos e) = cos <$> evalExpM e
-evalExpM (EPow e) = expUnit <$> evalExpM e
-evalExpM (Mul e1 e2) = liftA2 (*) (evalExpM e1) (evalExpM e2)
-evalExpM (Div e1 e2) = liftA2 divUnit (evalExpM e1) (evalExpM e2)
-evalExpM (Mod e1 e2) = liftA2 modUnit (evalExpM e1) (evalExpM e2)
-evalExpM (Add e1 e2) = liftA2 addUnit (evalExpM e1) (evalExpM e2)
-evalExpM (Sub e1 e2) = liftA2 subUnit (evalExpM e1) (evalExpM e2)
-evalExpM (Ite c e1 e2) = evalBExp c >>= evalIf
-    where evalIf cond = if cond then evalExpM e1 else evalExpM e2
-
-evalBExp :: BExp -> Reader (Double, Double) Bool
-evalBExp (Eq e1 e2) = liftA2 (==) (evalExpM e1) (evalExpM e2)
-evalBExp (Lt e1 e2) = liftA2 (<) (evalExpM e1) (evalExpM e2)
-evalBExp (Gt e1 e2) = liftA2 (>) (evalExpM e1) (evalExpM e2)
-evalBExp (Neq e1 e2) = liftA2 (/=) (evalExpM e1) (evalExpM e2)
-evalBExp (Leq e1 e2) = liftA2 (<=) (evalExpM e1) (evalExpM e2)
-evalBExp (Geq e1 e2) = liftA2 (>=) (evalExpM e1) (evalExpM e2)
-evalBExp (Not e) = not <$> evalBExp e
-evalBExp (And e1 e2) = liftA2 (&&) (evalBExp e1) (evalBExp e2)
-evalBExp (Or e1 e2) = liftA2 (||) (evalBExp e1) (evalBExp e2)
+evalExpM :: Exp -> Reader (Double, Double) Value
+evalExpM e = case e of
+    -- (EVar XVar) -> asks fst
+    -- (EVar YVar) -> asks snd
+    -- (EDVal (Val d)) -> return d
+    -- (Min a) -> negate <$> evalExpM a
+    -- (Sqrt a) -> fmap sqrtPos (evalExpM a)
+    -- (Sin a) -> sin <$> evalExpM a
+    -- (Cos a) -> cos <$> evalExpM a
+    -- (EPow a) -> expUnit <$> evalExpM a
+    -- (Mul a b) -> liftA2 (*) (evalExpM a) (evalExpM b)
+    -- (Div a b) -> liftA2 divUnit (evalExpM a) (evalExpM b)
+    -- (Mod a b) -> liftA2 modUnit (evalExpM a) (evalExpM b)
+    -- (Add a b) -> liftA2 addUnit (evalExpM a) (evalExpM b)
+    -- (Sub a b) -> liftA2 subUnit (evalExpM a) (evalExpM b)
+    -- (Eq a b) -> liftA2 (==) (evalExpM a) (evalExpM b)
+    -- (Lt a b) -> liftA2 (<) (evalExpM a) (evalExpM b)
+    -- (Gt a b) -> liftA2 (>) (evalExpM a) (evalExpM b)
+    -- (Neq a b) -> liftA2 (/=) (evalExpM a) (evalExpM b)
+    -- (Leq a b) -> liftA2 (<=) (evalExpM a) (evalExpM b)
+    -- (Geq a b) -> liftA2 (>=) (evalExpM a) (evalExpM b)
+    -- (Not a) -> not <$> evalBExp a
+    -- (And a b) -> liftA2 (&&) (evalBExp a) (evalBExp b)
+    -- (Or a b) -> liftA2 (||) (evalBExp a) (evalBExp b)
+    -- (Ite c a b) -> evalBExp c >>= evalIf
+    --     where evalIf cond = if cond then evalExpM a else evalExpM b
+    -- -- TODO: make this an error?
+    Rand -> trace "WARNING: Encountered 'Rand' in evaluation" return (VDVal 0.0)
+    _ -> trace "WARNING: Not implemented" return (VDVal 0.0)

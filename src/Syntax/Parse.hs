@@ -6,17 +6,16 @@ import Syntax.Grammar.Abs
 import Syntax.AbsF
 import System.Exit
 
-getInvalidDoubles :: Trip -> [Double]
-getInvalidDoubles (Triple a b c) = checkExp a ++ checkExp b ++ checkExp c
-    where checkExp = cata go where
-            go (EDValF (Val d)) = [d | d < -1 || d > 1]
-            go other = concat other
+getInvalidDoubles :: Exp -> [Double]
+getInvalidDoubles = cata go where
+    go (EDValF (Val d)) = [d | d < -1 || d > 1]
+    go other = concat other
 
 -- Parses contents of given input file
-parse :: String -> IO Trip
+parse :: String -> IO Exp
 parse s = do
     let ts = myLexer s
-    case pTrip ts of
+    case pExp ts of
         Left err_msg -> do
             putStrLn $ "Parse failed: " ++ err_msg
             putStrLn $ "Tokens still in stream:\n" ++ show ts
