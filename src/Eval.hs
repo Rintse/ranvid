@@ -121,11 +121,11 @@ evalAExp op e = evalExpM e >>= go where
         "Non-double argument to arithmetic operator:\n" ++ show other
 
 -- |Evaluate comparison operators
-evalComp :: Exp -> (Bool -> Bool -> Bool) -> Exp -> EvalMonad Value
+evalComp :: Exp -> (Double -> Double -> Bool) -> Exp -> EvalMonad Value
 evalComp e1 op e2 = eval2 e1 e2 >>= go where
-    go (VBVal v1, VBVal v2) = return $ VBVal $ op v1 v2
+    go (VVal v1, VVal v2) = return $ VBVal $ op v1 v2
     go other = throwError $ 
-        "Non-bool arguments to boolean operator:\n" ++ show other
+        "Non-double arguments to comparison operator:\n" ++ show other
 
 -- |Evaluate binary boolean operators
 evalBExp2 :: Exp -> (Bool -> Bool -> Bool) -> Exp -> EvalMonad Value

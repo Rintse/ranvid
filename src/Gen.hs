@@ -34,36 +34,58 @@ instance Arbitrary Var where
 
 genOfType :: Type -> Gen Exp
 genOfType TDouble = sized selectOnSize where
-        selectOnSize size
-            | size >= 0 && size < minRec = frequency $ nonLeafsG size
-            | size >= minRec && size < maxRec = frequency $ allNodesG size
-            | otherwise = frequency leafsG
-        leafsG =
-            [ (100, EVar <$> (arbitrary :: Gen Var))
-            , (050, EDVal <$> (arbitrary :: Gen DVal))
-            , (050, pure Rand)
-            ]
-        nonLeafsG size =
-            [ (050, resize (size + 1) $ Min <$> genD)
-            , (050, resize (size + 1) $ Sqrt <$> genD)
-            , (050, resize (size + 1) $ Sin <$> genD)
-            , (050, resize (size + 1) $ Cos <$> genD)
-            , (050, resize (size + 1) $ EPow <$> genD)
-            , (050, resize (size + 1) $ Mul <$> genD <*> genD)
-            , (050, resize (size + 1) $ Div <$> genD <*> genD)
-            , (050, resize (size + 1) $ Mod <$> genD <*> genD)
-            , (050, resize (size + 1) $ Add <$> genD <*> genD)
-            , (050, resize (size + 1) $ Sub <$> genD <*> genD)
-            , (050, resize (size + 1) $ Ite <$> genB <*> genD <*> genD)
-            -- TODO: fst/snd only make sense when function application exists
-            ]
-        allNodesG size = leafsG ++ nonLeafsG size
-        genD = genOfType TDouble
-        genB = genOfType TBool
+    selectOnSize size
+        | size >= 0 && size < minRec = frequency $ nonLeafsG size
+        | size >= minRec && size < maxRec = frequency $ allNodesG size
+        | otherwise = frequency leafsG
+    leafsG =
+        [ (100, EVar <$> (arbitrary :: Gen Var))
+        , (050, EDVal <$> (arbitrary :: Gen DVal))
+        , (050, pure Rand)
+        ]
+    nonLeafsG size =
+        [ (050, resize (size + 1) $ Min <$> genD)
+        , (050, resize (size + 1) $ Sqrt <$> genD)
+        , (050, resize (size + 1) $ Sin <$> genD)
+        , (050, resize (size + 1) $ Cos <$> genD)
+        , (050, resize (size + 1) $ EPow <$> genD)
+        , (050, resize (size + 1) $ Mul <$> genD <*> genD)
+        , (050, resize (size + 1) $ Div <$> genD <*> genD)
+        , (050, resize (size + 1) $ Mod <$> genD <*> genD)
+        , (050, resize (size + 1) $ Add <$> genD <*> genD)
+        , (050, resize (size + 1) $ Sub <$> genD <*> genD)
+        , (050, resize (size + 1) $ Ite <$> genB <*> genD <*> genD)
+        -- TODO: fst/snd only make sense when function application exists
+        ]
+    allNodesG size = leafsG ++ nonLeafsG size
+    genD = genOfType TDouble
+    genB = genOfType TBool
 
 genOfType (TProd a b) = Tup <$> genOfType a <*> genOfType b
+genOfType TBool = sized selectOnSize where
+    selectOnSize size
+            | size < maxRec = frequency $ stalksG size
+            | otherwise = frequency $ allNodesG size
+    -- When max depth is reached, recurse back into Exp with comparission 
+    -- operators, which will generate leafs immediately (hence `stalks`)
+    stalksG size = 
+        [ (050, resize (size + 1) $ Eq  <$> genD <*> genD)
+        , (050, resize (size + 1) $ Lt  <$> genD <*> genD)
+        , (050, resize (size + 1) $ Gt  <$> genD <*> genD)
+        , (050, resize (size + 1) $ Neq <$> genD <*> genD)
+        , (050, resize (size + 1) $ Leq <$> genD <*> genD)
+        , (050, resize (size + 1) $ Geq <$> genD <*> genD)
+        ]
+    nonStalksG size = 
+        [ (100, resize (size + 1) $ Not <$> genB)
+        , (100, resize (size + 1) $ And <$> genB <*> genB)
+        , (100, resize (size + 1) $ Or  <$> genB <*> genB)
+        ]
+    allNodesG size = stalksG size ++ nonStalksG size
+    genD = genOfType TDouble
+    genB = genOfType TBool
 
-genOfType _ = pure Rand
+genOfType _ = pure $ EDVal (Val 0)
 
 -- |Generate a random expression of type `t` with rng seeded to `seed`
 genExp :: Type -> String -> IO Exp
