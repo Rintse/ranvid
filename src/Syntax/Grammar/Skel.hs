@@ -47,14 +47,13 @@ transExp x = case x of
   Syntax.Grammar.Abs.Not exp -> failure x
   Syntax.Grammar.Abs.And exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Or exp1 exp2 -> failure x
-  Syntax.Grammar.Abs.Tup exp1 exp2 -> failure x
   Syntax.Grammar.Abs.Ite exp1 exp2 exp3 -> failure x
   Syntax.Grammar.Abs.Match exp1 ident1 exp2 ident2 exp3 -> failure x
+  Syntax.Grammar.Abs.Tup exp1 exp2 -> failure x
 
 transType :: Syntax.Grammar.Abs.Type -> Result
 transType x = case x of
   Syntax.Grammar.Abs.TDouble -> failure x
-  Syntax.Grammar.Abs.TInt -> failure x
   Syntax.Grammar.Abs.TBool -> failure x
   Syntax.Grammar.Abs.TProd type_1 type_2 -> failure x
   Syntax.Grammar.Abs.TCoprod type_1 type_2 -> failure x

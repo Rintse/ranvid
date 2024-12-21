@@ -1,8 +1,7 @@
 module Value ( Value (..) ) where
 
 data Value
-    = VIVal Int
-    | VDVal Double
+    = VVal Double
     | VBVal Bool
     | VPair Value Value
     | VL Value

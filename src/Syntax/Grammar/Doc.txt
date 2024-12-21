@@ -28,19 +28,19 @@ followed by an unsigned or negative exponent.
 The set of reserved words is the set of terminals appearing in the grammar. Those reserved words that consist of non-letter characters are called symbols, and they are treated in a different way from those that are similar to identifiers. The lexer follows rules familiar from languages like Haskell, C, and Java, including longest match and spacing conventions.
 
 The reserved words used in grammar are the following:
-  | ``Bool`` | ``Double`` | ``Int`` | ``L``
-  | ``R`` | ``and`` | ``cos`` | ``else``
-  | ``exp`` | ``fst`` | ``if`` | ``left``
-  | ``match`` | ``or`` | ``right`` | ``sin``
-  | ``snd`` | ``sqrt`` | ``then`` | ``x``
-  | ``y`` |  |  |
+  | ``Bool`` | ``Double`` | ``L`` | ``R``
+  | ``and`` | ``cos`` | ``else`` | ``exp``
+  | ``fst`` | ``if`` | ``left`` | ``match``
+  | ``or`` | ``right`` | ``sin`` | ``snd``
+  | ``sqrt`` | ``then`` | ``x`` | ``y``
 
 The symbols used in grammar are the following:
   | ( | ) | rand() | -
   | * | / | % | +
   | == | < | > | !=
-  | <= | >= | ! | ,
-  | { | -> | ; | }
+  | <= | >= | ! | {
+  | -> | ; | } | ,
+  | [ | ] |  |
 
 ===Comments===
 Single-line comments begin with #.There are no multiple-line comments in the grammar.
@@ -53,9 +53,9 @@ All other symbols are terminals.
 
   | //Exp// | -> | //Exp1//
   |  |  **|**  | ``if`` ``(`` //Exp// ``)`` ``then`` //Exp1// ``else`` //Exp1//
-  |  |  **|**  | ``match`` //Exp// ``{`` ``L`` //Ident// ``->`` //Exp1// ``;`` ``R`` //Ident// ``->`` //Exp1// ``}``
+  |  |  **|**  | ``match`` //Exp// ``{`` ``L`` //Ident// ``->`` //Exp// ``;`` ``R`` //Ident// ``->`` //Exp// ``}``
+  |  |  **|**  | ``(`` //Exp// ``,`` //Exp// ``)``
   | //Exp1// | -> | //Exp2//
-  |  |  **|**  | ``(`` //Exp1// ``,`` //Exp2// ``)``
   | //Exp2// | -> | //Exp3//
   |  |  **|**  | //Exp2// ``and`` //Exp3//
   |  |  **|**  | //Exp2// ``or`` //Exp3//
@@ -75,30 +75,32 @@ All other symbols are terminals.
   |  |  **|**  | //Exp6// ``*`` //Exp7//
   |  |  **|**  | //Exp6// ``/`` //Exp7//
   |  |  **|**  | //Exp6// ``%`` //Exp7//
-  | //Exp7// | -> | ``(`` //Exp// ``)``
-  | //Type// | -> | //Type1//
-  | //Type1// | -> | //Type2//
-  |  |  **|**  | //Type1// ``x`` //Type2//
-  |  |  **|**  | //Type1// ``+`` //Type2//
-  | //Type2// | -> | ``(`` //Type// ``)``
-  |  |  **|**  | ``Double``
-  |  |  **|**  | ``Int``
-  |  |  **|**  | ``Bool``
-  | //Var// | -> | ``x``
-  |  |  **|**  | ``y``
-  | //DVal// | -> | //Double//
-  | //Exp10// | -> | //Var//
-  |  |  **|**  | //DVal//
-  |  |  **|**  | ``rand()``
-  | //Exp9// | -> | ``left`` //Exp10//
-  |  |  **|**  | ``right`` //Exp10//
-  |  |  **|**  | ``fst`` //Exp10//
-  |  |  **|**  | ``snd`` //Exp10//
-  | //Exp8// | -> | ``-`` //Exp9//
+  | //Exp7// | -> | //Exp8//
+  | //Exp8// | -> | //Exp9//
+  |  |  **|**  | ``-`` //Exp9//
   |  |  **|**  | ``sqrt`` ``(`` //Exp9// ``)``
   |  |  **|**  | ``sin`` ``(`` //Exp9// ``)``
   |  |  **|**  | ``cos`` ``(`` //Exp9// ``)``
   |  |  **|**  | ``exp`` ``(`` //Exp9// ``)``
+  | //Exp9// | -> | //Exp10//
+  |  |  **|**  | ``left`` //Exp10//
+  |  |  **|**  | ``right`` //Exp10//
+  |  |  **|**  | ``fst`` //Exp10//
+  |  |  **|**  | ``snd`` //Exp10//
+  | //Exp10// | -> | ``(`` //Exp// ``)``
+  |  |  **|**  | //Var//
+  |  |  **|**  | //DVal//
+  |  |  **|**  | ``rand()``
+  | //Type// | -> | //Type1//
+  |  |  **|**  | ``(`` //Type// ``,`` //Type// ``)``
+  |  |  **|**  | ``[`` //Type// ``+`` //Type// ``]``
+  | //Type1// | -> | //Type2//
+  |  |  **|**  | ``Double``
+  |  |  **|**  | ``Bool``
+  | //Type2// | -> | ``(`` //Type// ``)``
+  | //Var// | -> | ``x``
+  |  |  **|**  | ``y``
+  | //DVal// | -> | //Double//
 
 
 

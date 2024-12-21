@@ -1,3 +1,6 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module Eval (
     RGBTup, generateRGBs, checkRGBs,
     expUnit, sqrtPos, modUnit, addUnit, subUnit, divUnit,
@@ -10,9 +13,11 @@ import Control.Applicative ( liftA3, liftA2 )
 import Control.Monad.Reader
 import Data.Fixed ( mod' )
 import Control.Parallel.Strategies
-import Debug.Trace (trace)
 import System.Exit (exitFailure)
 import Data.List (intercalate)
+import Control.Monad.Except ( MonadError(throwError), Except, runExcept )
+import Data.Either ( partitionEithers )
+import Data.Bifunctor (Bifunctor(first))
 
 type RGBTup = (Double, Double, Double)
 
@@ -33,22 +38,32 @@ canvas (w, h) = do
 scalePixel :: (Double, Double, Double) -> (Double, Double, Double)
 scalePixel = f3 (\c -> (c + 1) / 2) where f3 f (a, b, c) = (f a, f b, f c)
 
-valToRGB :: Value -> RGBTup
-valToRGB (VPair (VDVal r) (VPair (VDVal g) (VDVal b))) = scalePixel (r, g, b)
-valToRGB (VPair (VPair (VDVal r) (VDVal g)) (VDVal b)) = scalePixel (r, g, b)
-valToRGB _ = (0.0, 0.0, 0.0)
+valToRGB :: Either String Value -> Either String RGBTup
+valToRGB (Right (VPair (VVal r) (VPair (VVal g) (VVal b)))) =
+    Right $ scalePixel (r, g, b)
+valToRGB (Right (VPair (VPair (VVal r) (VVal g)) (VVal b))) =
+    Right $ scalePixel (r, g, b)
+valToRGB (Right _) = Left "Evaluation did not give a 3-tuple of doubles"
+valToRGB (Left e) = Left e
 
 -- |Generate a canvas for expression `e` with size `size`
 -- Runs in `p` parallel threads simultaneously
 -- Expects all `Rand` nodes to already have been substituted for `EDVal`s
-generateRGBs :: Exp -> (Int, Int) -> Int -> [[RGBTup]]
+generateRGBs :: Exp -> (Int, Int) -> Int -> Either String [[RGBTup]]
 generateRGBs e size p = do
-    let calcRow = map ( valToRGB . evalExp e ) where
-            evalExp e' = runReader (evalExpM e')
+    let calcRow = map ( valToRGB . evalExp ) where
+            toEval = evalMonad (evalExpM e)
+            evalExp c = runExcept (runReaderT toEval c)
     let calcRows = map calcRow (canvas size)
-    if p > 1
+
+    let results = if p > 1
         then calcRows `using` parListChunk p rdeepseq
         else calcRows
+
+    let (errors, rgbs) = unzip (map partitionEithers results)
+    case concat errors of
+        [] -> return rgbs
+        (err:_) -> throwError $ "Error generating RGBS: " ++ err
 
 checkRGBs :: [[RGBTup]] -> IO ()
 checkRGBs rgbs = do
@@ -79,32 +94,79 @@ divUnit a b
     | abs a < abs b = a / b
     | otherwise = b / a
 
-evalExpM :: Exp -> Reader (Double, Double) Value
+-- A monad for pogram evaluation, containing:
+--   - A reader with the value for X and Y in this evaluation
+--   - An error monad to express evaluation failure
+newtype EvalMonad a = EvalMonad {
+    evalMonad :: ReaderT (Double, Double) (Except String) a
+} deriving  ( Functor, Applicative, Monad
+            , MonadReader (Double, Double), MonadError String )
+
+-- |Evaluates 2 arguments and pairs them to allow for easy pattern matching
+eval2 :: Exp -> Exp -> EvalMonad (Value, Value)
+eval2 a b = liftA2 (,) (evalExpM a) (evalExpM b)
+
+-- |Evaluate binary arithmetic operators
+evalAExp2 :: Exp -> (Double -> Double -> Double) -> Exp -> EvalMonad Value
+evalAExp2 e1 op e2 = eval2 e1 e2 >>= go where
+    go (VVal v1, VVal v2) = return $ VVal $ op v1 v2
+    go other = throwError $ 
+        "Non-double arguments to arithmetic operator:\n" ++ show other
+
+-- |Evaluate unary arithmetic operators
+evalAExp :: (Double -> Double) -> Exp -> EvalMonad Value
+evalAExp op e = evalExpM e >>= go where 
+    go (VVal v) = return $ VVal $ op v
+    go other = throwError $ 
+        "Non-double argument to arithmetic operator:\n" ++ show other
+
+-- |Evaluate comparison operators
+evalComp :: Exp -> (Bool -> Bool -> Bool) -> Exp -> EvalMonad Value
+evalComp e1 op e2 = eval2 e1 e2 >>= go where
+    go (VBVal v1, VBVal v2) = return $ VBVal $ op v1 v2
+    go other = throwError $ 
+        "Non-bool arguments to boolean operator:\n" ++ show other
+
+-- |Evaluate binary boolean operators
+evalBExp2 :: Exp -> (Bool -> Bool -> Bool) -> Exp -> EvalMonad Value
+evalBExp2 e1 op e2 = eval2 e1 e2 >>= go where
+    go (VBVal v1, VBVal v2) = return $ VBVal $ op v1 v2
+    go other = throwError $ 
+        "Non-bool arguments to boolean operator:\n" ++ show other
+
+-- |Evaluate unary boolean operators
+evalBExp :: (Bool -> Bool) -> Exp -> EvalMonad Value
+evalBExp op e = evalExpM e >>= go where 
+    go (VBVal b) = return $ VBVal $ op b
+    go other = throwError $ 
+        "Non-bool argument to boolean operator:\n" ++ show other
+
+evalExpM :: Exp -> EvalMonad Value
 evalExpM e = case e of
-    -- (EVar XVar) -> asks fst
-    -- (EVar YVar) -> asks snd
-    -- (EDVal (Val d)) -> return d
-    -- (Min a) -> negate <$> evalExpM a
-    -- (Sqrt a) -> fmap sqrtPos (evalExpM a)
-    -- (Sin a) -> sin <$> evalExpM a
-    -- (Cos a) -> cos <$> evalExpM a
-    -- (EPow a) -> expUnit <$> evalExpM a
-    -- (Mul a b) -> liftA2 (*) (evalExpM a) (evalExpM b)
-    -- (Div a b) -> liftA2 divUnit (evalExpM a) (evalExpM b)
-    -- (Mod a b) -> liftA2 modUnit (evalExpM a) (evalExpM b)
-    -- (Add a b) -> liftA2 addUnit (evalExpM a) (evalExpM b)
-    -- (Sub a b) -> liftA2 subUnit (evalExpM a) (evalExpM b)
-    -- (Eq a b) -> liftA2 (==) (evalExpM a) (evalExpM b)
-    -- (Lt a b) -> liftA2 (<) (evalExpM a) (evalExpM b)
-    -- (Gt a b) -> liftA2 (>) (evalExpM a) (evalExpM b)
-    -- (Neq a b) -> liftA2 (/=) (evalExpM a) (evalExpM b)
-    -- (Leq a b) -> liftA2 (<=) (evalExpM a) (evalExpM b)
-    -- (Geq a b) -> liftA2 (>=) (evalExpM a) (evalExpM b)
-    -- (Not a) -> not <$> evalBExp a
-    -- (And a b) -> liftA2 (&&) (evalBExp a) (evalBExp b)
-    -- (Or a b) -> liftA2 (||) (evalBExp a) (evalBExp b)
-    -- (Ite c a b) -> evalBExp c >>= evalIf
-    --     where evalIf cond = if cond then evalExpM a else evalExpM b
-    -- -- TODO: make this an error?
-    Rand -> trace "WARNING: Encountered 'Rand' in evaluation" return (VDVal 0.0)
-    _ -> trace "WARNING: Not implemented" return (VDVal 0.0)
+    (EVar XVar) -> asks (VVal . fst)
+    (EVar YVar) -> asks (VVal . snd)
+    (EDVal (Val d)) -> return $ VVal d
+    (Min a) -> evalAExp negate a
+    (Sqrt a) -> evalAExp sqrtPos a
+    (Sin a) -> evalAExp sin a
+    (Cos a) -> evalAExp cos a
+    (EPow a) -> evalAExp expUnit a
+    (Mul a b) -> evalAExp2 a (*) b
+    (Div a b) -> evalAExp2 a divUnit b
+    (Mod a b) -> evalAExp2 a modUnit b
+    (Add a b) -> evalAExp2 a addUnit b
+    (Sub a b) -> evalAExp2 a subUnit b
+    (Eq a b) -> evalComp a (==) b
+    (Lt a b) -> evalComp a (<) b
+    (Gt a b) -> evalComp a (>) b
+    (Neq a b) -> evalComp a (/=) b
+    (Leq a b) -> evalComp a (<=) b
+    (Geq a b) -> evalComp a (>=) b
+    (Not a) -> evalBExp not a
+    (And a b) -> evalBExp2 a (&&) b
+    (Or a b) -> evalBExp2 a (||) b
+    (Ite c a b) -> evalExpM c >>= doIf where
+        doIf (VBVal rb) = if rb then evalExpM a else evalExpM b
+        doIf other = throwError $ "Non-bool in if condition: " ++ show other
+    (Tup a b) -> VPair <$> evalExpM a <*> evalExpM b
+    other -> throwError $ "WARNING: Not implemented: " ++ show other

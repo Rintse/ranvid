@@ -2,9 +2,8 @@
 
 module Main (main) where
 
-import Syntax.Grammar.Abs ( Type(..) )
 import Syntax.Grammar.Print ( printTree )
-import Syntax.Parse ( parse )
+import Syntax.Parse ( parseExp, parseType )
 import Eval ( generateRGBs, checkRGBs )
 import Preprocess ( fillRands, expDepth, expSize )
 import Args ( getOpts, Options(..) )
@@ -24,27 +23,32 @@ main = do
             , optSeedHash = seed
             } <- getOpts
 
+
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
     tripleWithRands <- case inFile of
-            Just s -> parse s
-            Nothing -> return $ genExp TDouble seed
+        Just s -> parseExp s
+        Nothing -> do
+            requiredType <- parseType "( Double , ( Double , Double ) )"
+            genExp requiredType seed
 
     let triple = fillRands tripleWithRands seed
-    printf "Using the expression [depths=%s, sizes=%s]:" 
+    printf "Using the expression [depth=%s, size=%s]:"
         (show $ expDepth triple)
         (show $ expSize triple)
     putStrLn $ printTree triple
 
     let simplified = triple
     -- let simplified = simplifyTrip triple
-    -- printf "Simplified to [depths=%s, sizes=%s]:" 
+    -- printf "Simplified to [depth=%s, size=%s]:" 
     --     (showTripDepths simplified)
     --     (showTripSizes simplified)
     -- putStrLn $ printTree simplified
 
-    let rgbs = generateRGBs simplified canvasSize parallel
-    checkRGBs rgbs
-    let action = case outFile of 
-            Nothing -> displayImageUsing defaultViewer True 
-            Just filename -> writeImage filename
-    action $ rgbsToImg rgbs
+    case generateRGBs simplified canvasSize parallel of
+        Left err -> putStrLn $ "Could not generate RGBs: " ++ err
+        Right rgbs -> do
+            checkRGBs rgbs
+            let action = case outFile of
+                    Nothing -> displayImageUsing defaultViewer True
+                    Just filename -> writeImage filename
+            action $ rgbsToImg rgbs

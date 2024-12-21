@@ -44,28 +44,29 @@ import Syntax.Grammar.Lex
   '>='     { PT _ (TS _ 17) }
   'Bool'   { PT _ (TS _ 18) }
   'Double' { PT _ (TS _ 19) }
-  'Int'    { PT _ (TS _ 20) }
-  'L'      { PT _ (TS _ 21) }
-  'R'      { PT _ (TS _ 22) }
-  'and'    { PT _ (TS _ 23) }
-  'cos'    { PT _ (TS _ 24) }
-  'else'   { PT _ (TS _ 25) }
-  'exp'    { PT _ (TS _ 26) }
-  'fst'    { PT _ (TS _ 27) }
-  'if'     { PT _ (TS _ 28) }
-  'left'   { PT _ (TS _ 29) }
-  'match'  { PT _ (TS _ 30) }
-  'or'     { PT _ (TS _ 31) }
-  'rand()' { PT _ (TS _ 32) }
-  'right'  { PT _ (TS _ 33) }
-  'sin'    { PT _ (TS _ 34) }
-  'snd'    { PT _ (TS _ 35) }
-  'sqrt'   { PT _ (TS _ 36) }
-  'then'   { PT _ (TS _ 37) }
-  'x'      { PT _ (TS _ 38) }
-  'y'      { PT _ (TS _ 39) }
-  '{'      { PT _ (TS _ 40) }
-  '}'      { PT _ (TS _ 41) }
+  'L'      { PT _ (TS _ 20) }
+  'R'      { PT _ (TS _ 21) }
+  '['      { PT _ (TS _ 22) }
+  ']'      { PT _ (TS _ 23) }
+  'and'    { PT _ (TS _ 24) }
+  'cos'    { PT _ (TS _ 25) }
+  'else'   { PT _ (TS _ 26) }
+  'exp'    { PT _ (TS _ 27) }
+  'fst'    { PT _ (TS _ 28) }
+  'if'     { PT _ (TS _ 29) }
+  'left'   { PT _ (TS _ 30) }
+  'match'  { PT _ (TS _ 31) }
+  'or'     { PT _ (TS _ 32) }
+  'rand()' { PT _ (TS _ 33) }
+  'right'  { PT _ (TS _ 34) }
+  'sin'    { PT _ (TS _ 35) }
+  'snd'    { PT _ (TS _ 36) }
+  'sqrt'   { PT _ (TS _ 37) }
+  'then'   { PT _ (TS _ 38) }
+  'x'      { PT _ (TS _ 39) }
+  'y'      { PT _ (TS _ 40) }
+  '{'      { PT _ (TS _ 41) }
+  '}'      { PT _ (TS _ 42) }
   L_Ident  { PT _ (TV $$)   }
   L_doubl  { PT _ (TD $$)   }
 
@@ -81,12 +82,11 @@ Exp :: { Syntax.Grammar.Abs.Exp }
 Exp
   : Exp1 { $1 }
   | 'if' '(' Exp ')' 'then' Exp1 'else' Exp1 { Syntax.Grammar.Abs.Ite $3 $6 $8 }
-  | 'match' Exp '{' 'L' Ident '->' Exp1 ';' 'R' Ident '->' Exp1 '}' { Syntax.Grammar.Abs.Match $2 $5 $7 $10 $12 }
+  | 'match' Exp '{' 'L' Ident '->' Exp ';' 'R' Ident '->' Exp '}' { Syntax.Grammar.Abs.Match $2 $5 $7 $10 $12 }
+  | '(' Exp ',' Exp ')' { Syntax.Grammar.Abs.Tup $2 $4 }
 
 Exp1 :: { Syntax.Grammar.Abs.Exp }
-Exp1
-  : Exp2 { $1 }
-  | '(' Exp1 ',' Exp2 ')' { Syntax.Grammar.Abs.Tup $2 $4 }
+Exp1 : Exp2 { $1 }
 
 Exp2 :: { Syntax.Grammar.Abs.Exp }
 Exp2
@@ -121,23 +121,46 @@ Exp6
   | Exp6 '%' Exp7 { Syntax.Grammar.Abs.Mod $1 $3 }
 
 Exp7 :: { Syntax.Grammar.Abs.Exp }
-Exp7 : '(' Exp ')' { $2 }
+Exp7 : Exp8 { $1 }
+
+Exp8 :: { Syntax.Grammar.Abs.Exp }
+Exp8
+  : Exp9 { $1 }
+  | '-' Exp9 { Syntax.Grammar.Abs.Min $2 }
+  | 'sqrt' '(' Exp9 ')' { Syntax.Grammar.Abs.Sqrt $3 }
+  | 'sin' '(' Exp9 ')' { Syntax.Grammar.Abs.Sin $3 }
+  | 'cos' '(' Exp9 ')' { Syntax.Grammar.Abs.Cos $3 }
+  | 'exp' '(' Exp9 ')' { Syntax.Grammar.Abs.EPow $3 }
+
+Exp9 :: { Syntax.Grammar.Abs.Exp }
+Exp9
+  : Exp10 { $1 }
+  | 'left' Exp10 { Syntax.Grammar.Abs.InL $2 }
+  | 'right' Exp10 { Syntax.Grammar.Abs.InR $2 }
+  | 'fst' Exp10 { Syntax.Grammar.Abs.Fst $2 }
+  | 'snd' Exp10 { Syntax.Grammar.Abs.Snd $2 }
+
+Exp10 :: { Syntax.Grammar.Abs.Exp }
+Exp10
+  : '(' Exp ')' { $2 }
+  | Var { Syntax.Grammar.Abs.EVar $1 }
+  | DVal { Syntax.Grammar.Abs.EDVal $1 }
+  | 'rand()' { Syntax.Grammar.Abs.Rand }
 
 Type :: { Syntax.Grammar.Abs.Type }
-Type : Type1 { $1 }
+Type
+  : Type1 { $1 }
+  | '(' Type ',' Type ')' { Syntax.Grammar.Abs.TProd $2 $4 }
+  | '[' Type '+' Type ']' { Syntax.Grammar.Abs.TCoprod $2 $4 }
 
 Type1 :: { Syntax.Grammar.Abs.Type }
 Type1
   : Type2 { $1 }
-  | Type1 'x' Type2 { Syntax.Grammar.Abs.TProd $1 $3 }
-  | Type1 '+' Type2 { Syntax.Grammar.Abs.TCoprod $1 $3 }
+  | 'Double' { Syntax.Grammar.Abs.TDouble }
+  | 'Bool' { Syntax.Grammar.Abs.TBool }
 
 Type2 :: { Syntax.Grammar.Abs.Type }
-Type2
-  : '(' Type ')' { $2 }
-  | 'Double' { Syntax.Grammar.Abs.TDouble }
-  | 'Int' { Syntax.Grammar.Abs.TInt }
-  | 'Bool' { Syntax.Grammar.Abs.TBool }
+Type2 : '(' Type ')' { $2 }
 
 Var :: { Syntax.Grammar.Abs.Var }
 Var
@@ -145,27 +168,6 @@ Var
 
 DVal :: { Syntax.Grammar.Abs.DVal }
 DVal : Double { Syntax.Grammar.Abs.Val $1 }
-
-Exp10 :: { Syntax.Grammar.Abs.Exp }
-Exp10
-  : Var { Syntax.Grammar.Abs.EVar $1 }
-  | DVal { Syntax.Grammar.Abs.EDVal $1 }
-  | 'rand()' { Syntax.Grammar.Abs.Rand }
-
-Exp9 :: { Syntax.Grammar.Abs.Exp }
-Exp9
-  : 'left' Exp10 { Syntax.Grammar.Abs.InL $2 }
-  | 'right' Exp10 { Syntax.Grammar.Abs.InR $2 }
-  | 'fst' Exp10 { Syntax.Grammar.Abs.Fst $2 }
-  | 'snd' Exp10 { Syntax.Grammar.Abs.Snd $2 }
-
-Exp8 :: { Syntax.Grammar.Abs.Exp }
-Exp8
-  : '-' Exp9 { Syntax.Grammar.Abs.Min $2 }
-  | 'sqrt' '(' Exp9 ')' { Syntax.Grammar.Abs.Sqrt $3 }
-  | 'sin' '(' Exp9 ')' { Syntax.Grammar.Abs.Sin $3 }
-  | 'cos' '(' Exp9 ')' { Syntax.Grammar.Abs.Cos $3 }
-  | 'exp' '(' Exp9 ')' { Syntax.Grammar.Abs.EPow $3 }
 
 {
 

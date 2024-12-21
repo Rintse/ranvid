@@ -37,13 +37,12 @@ data Exp
     | Not Exp
     | And Exp Exp
     | Or Exp Exp
-    | Tup Exp Exp
     | Ite Exp Exp Exp
     | Match Exp Ident Exp Ident Exp
+    | Tup Exp Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Type
-    = TDouble | TInt | TBool | TProd Type Type | TCoprod Type Type
+data Type = TDouble | TBool | TProd Type Type | TCoprod Type Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data Var = XVar | YVar

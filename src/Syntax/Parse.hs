@@ -1,4 +1,4 @@
-module Syntax.Parse (parse) where
+module Syntax.Parse ( parseExp, parseType ) where
 
 import Data.Functor.Foldable ( cata )
 import Syntax.Grammar.Par
@@ -12,12 +12,12 @@ getInvalidDoubles = cata go where
     go other = concat other
 
 -- Parses contents of given input file
-parse :: String -> IO Exp
-parse s = do
+parseExp :: String -> IO Exp
+parseExp s = do
     let ts = myLexer s
     case pExp ts of
         Left err_msg -> do
-            putStrLn $ "Parse failed: " ++ err_msg
+            putStrLn $ "Expression parse failed: " ++ err_msg
             putStrLn $ "Tokens still in stream:\n" ++ show ts
             exitFailure
         Right triple -> do
@@ -27,3 +27,13 @@ parse s = do
                     putStrLn $ "Parsed expression contains numbers outside of"
                         ++ "the [-1, 1] range: " ++ show non_empty_list
                     exitFailure
+
+parseType :: String -> IO Type
+parseType s = do
+    let ts = myLexer s
+    case pType ts of
+        Left err_msg -> do
+            putStrLn $ "Type parse failed: " ++ err_msg
+            putStrLn $ "Tokens still in stream:\n" ++ show ts
+            exitFailure
+        Right triple -> return triple
