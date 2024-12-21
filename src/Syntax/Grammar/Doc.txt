@@ -30,9 +30,9 @@ The set of reserved words is the set of terminals appearing in the grammar. Thos
 The reserved words used in grammar are the following:
   | ``Bool`` | ``Double`` | ``L`` | ``R``
   | ``and`` | ``cos`` | ``else`` | ``exp``
-  | ``fst`` | ``if`` | ``left`` | ``match``
-  | ``or`` | ``right`` | ``sin`` | ``snd``
-  | ``sqrt`` | ``then`` | ``x`` | ``y``
+  | ``fst`` | ``if`` | ``lambda`` | ``left``
+  | ``match`` | ``or`` | ``right`` | ``sin``
+  | ``snd`` | ``sqrt`` | ``then`` |
 
 The symbols used in grammar are the following:
   | ( | ) | rand() | -
@@ -55,6 +55,7 @@ All other symbols are terminals.
   |  |  **|**  | ``if`` ``(`` //Exp// ``)`` ``then`` //Exp1// ``else`` //Exp1//
   |  |  **|**  | ``match`` //Exp// ``{`` ``L`` //Ident// ``->`` //Exp// ``;`` ``R`` //Ident// ``->`` //Exp// ``}``
   |  |  **|**  | ``(`` //Exp// ``,`` //Exp// ``)``
+  |  |  **|**  | ``lambda`` //Ident// ``->`` //Exp//
   | //Exp1// | -> | //Exp2//
   | //Exp2// | -> | //Exp3//
   |  |  **|**  | //Exp2// ``and`` //Exp3//
@@ -88,18 +89,18 @@ All other symbols are terminals.
   |  |  **|**  | ``fst`` //Exp10//
   |  |  **|**  | ``snd`` //Exp10//
   | //Exp10// | -> | ``(`` //Exp// ``)``
-  |  |  **|**  | //Var//
+  |  |  **|**  | //Ident//
   |  |  **|**  | //DVal//
   |  |  **|**  | ``rand()``
+  |  |  **|**  | //Exp10// //Exp10//
   | //Type// | -> | //Type1//
+  |  |  **|**  | //Type// ``->`` //Type//
   |  |  **|**  | ``(`` //Type// ``,`` //Type// ``)``
   |  |  **|**  | ``[`` //Type// ``+`` //Type// ``]``
   | //Type1// | -> | //Type2//
   |  |  **|**  | ``Double``
   |  |  **|**  | ``Bool``
   | //Type2// | -> | ``(`` //Type// ``)``
-  | //Var// | -> | ``x``
-  |  |  **|**  | ``y``
   | //DVal// | -> | //Double//
 
 

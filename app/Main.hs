@@ -32,7 +32,7 @@ main = do
             genExp requiredType seed
 
     let triple = fillRands tripleWithRands seed
-    printf "Using the expression [depth=%s, size=%s]:"
+    printf "Using the expression [depth=%s, size=%s]:\n"
         (show $ expDepth triple)
         (show $ expSize triple)
     putStrLn $ printTree triple

@@ -6,6 +6,7 @@ module Eval (
     expUnit, sqrtPos, modUnit, addUnit, subUnit, divUnit,
 ) where
 
+import Syntax.AbsF
 import Syntax.Grammar.Abs
 import Value ( Value(..) )
 
@@ -141,10 +142,16 @@ evalBExp op e = evalExpM e >>= go where
     go other = throwError $ 
         "Non-bool argument to boolean operator:\n" ++ show other
 
+-- |Substitue, in `e`, `x` for `s`
+substitute :: Exp -> Ident -> Exp -> Exp
+substitute e x s = e
+-- substitute e x s = runReader (substM e) (x, s) where
+--     substM = apoM go
+--     go :: Exp -> ExpF Exp
+--     go (Var v) = asks (fmap Left . project . doSub)
+
 evalExpM :: Exp -> EvalMonad Value
 evalExpM e = case e of
-    (EVar XVar) -> asks (VVal . fst)
-    (EVar YVar) -> asks (VVal . snd)
     (EDVal (Val d)) -> return $ VVal d
     (Min a) -> evalAExp negate a
     (Sqrt a) -> evalAExp sqrtPos a
@@ -165,6 +172,10 @@ evalExpM e = case e of
     (Not a) -> evalBExp not a
     (And a b) -> evalBExp2 a (&&) b
     (Or a b) -> evalBExp2 a (||) b
+    (Abstr a b) -> return $ VFun a b
+    (App a b) -> evalExpM a >>= doApp where
+        doApp (VFun i body) = evalExpM $ substitute body i b
+        doApp other = throwError $ "Invalid application:" ++ show other
     (Ite c a b) -> evalExpM c >>= doIf where
         doIf (VBVal rb) = if rb then evalExpM a else evalExpM b
         doIf other = throwError $ "Non-bool in if condition: " ++ show other

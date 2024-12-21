@@ -54,19 +54,18 @@ import Syntax.Grammar.Lex
   'exp'    { PT _ (TS _ 27) }
   'fst'    { PT _ (TS _ 28) }
   'if'     { PT _ (TS _ 29) }
-  'left'   { PT _ (TS _ 30) }
-  'match'  { PT _ (TS _ 31) }
-  'or'     { PT _ (TS _ 32) }
-  'rand()' { PT _ (TS _ 33) }
-  'right'  { PT _ (TS _ 34) }
-  'sin'    { PT _ (TS _ 35) }
-  'snd'    { PT _ (TS _ 36) }
-  'sqrt'   { PT _ (TS _ 37) }
-  'then'   { PT _ (TS _ 38) }
-  'x'      { PT _ (TS _ 39) }
-  'y'      { PT _ (TS _ 40) }
-  '{'      { PT _ (TS _ 41) }
-  '}'      { PT _ (TS _ 42) }
+  'lambda' { PT _ (TS _ 30) }
+  'left'   { PT _ (TS _ 31) }
+  'match'  { PT _ (TS _ 32) }
+  'or'     { PT _ (TS _ 33) }
+  'rand()' { PT _ (TS _ 34) }
+  'right'  { PT _ (TS _ 35) }
+  'sin'    { PT _ (TS _ 36) }
+  'snd'    { PT _ (TS _ 37) }
+  'sqrt'   { PT _ (TS _ 38) }
+  'then'   { PT _ (TS _ 39) }
+  '{'      { PT _ (TS _ 40) }
+  '}'      { PT _ (TS _ 41) }
   L_Ident  { PT _ (TV $$)   }
   L_doubl  { PT _ (TD $$)   }
 
@@ -84,6 +83,7 @@ Exp
   | 'if' '(' Exp ')' 'then' Exp1 'else' Exp1 { Syntax.Grammar.Abs.Ite $3 $6 $8 }
   | 'match' Exp '{' 'L' Ident '->' Exp ';' 'R' Ident '->' Exp '}' { Syntax.Grammar.Abs.Match $2 $5 $7 $10 $12 }
   | '(' Exp ',' Exp ')' { Syntax.Grammar.Abs.Tup $2 $4 }
+  | 'lambda' Ident '->' Exp { Syntax.Grammar.Abs.Abstr $2 $4 }
 
 Exp1 :: { Syntax.Grammar.Abs.Exp }
 Exp1 : Exp2 { $1 }
@@ -143,13 +143,15 @@ Exp9
 Exp10 :: { Syntax.Grammar.Abs.Exp }
 Exp10
   : '(' Exp ')' { $2 }
-  | Var { Syntax.Grammar.Abs.EVar $1 }
+  | Ident { Syntax.Grammar.Abs.Var $1 }
   | DVal { Syntax.Grammar.Abs.EDVal $1 }
   | 'rand()' { Syntax.Grammar.Abs.Rand }
+  | Exp10 Exp10 { Syntax.Grammar.Abs.App $1 $2 }
 
 Type :: { Syntax.Grammar.Abs.Type }
 Type
   : Type1 { $1 }
+  | Type '->' Type { Syntax.Grammar.Abs.TFun $1 $3 }
   | '(' Type ',' Type ')' { Syntax.Grammar.Abs.TProd $2 $4 }
   | '[' Type '+' Type ']' { Syntax.Grammar.Abs.TCoprod $2 $4 }
 
@@ -161,10 +163,6 @@ Type1
 
 Type2 :: { Syntax.Grammar.Abs.Type }
 Type2 : '(' Type ')' { $2 }
-
-Var :: { Syntax.Grammar.Abs.Var }
-Var
-  : 'x' { Syntax.Grammar.Abs.XVar } | 'y' { Syntax.Grammar.Abs.YVar }
 
 DVal :: { Syntax.Grammar.Abs.DVal }
 DVal : Double { Syntax.Grammar.Abs.Val $1 }

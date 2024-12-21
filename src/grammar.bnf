@@ -8,13 +8,13 @@ coercions Type 2 ;
 -- TODO: incorporate this custom double in the [-1, 1] interval ?
 -- token UnitDouble  (('0' | '1') '.' digit+ ('e' '-'? digit+)?) ;
 
-XVar.       Var     ::= "x" ;
-YVar.       Var     ::= "y" ;
 Val.        DVal    ::= Double ;
 
-EVar.       Exp10   ::= Var;
-EDVal.      Exp10   ::= DVal;
+Var.        Exp10   ::= Ident ;
+EDVal.      Exp10   ::= DVal ;
 Rand.       Exp10   ::= "rand()" ;
+
+App.        Exp10   ::= Exp10 Exp10 ;
 
 InL.        Exp9    ::= "left" Exp10 ;
 InR.        Exp9    ::= "right" Exp10 ;
@@ -22,10 +22,10 @@ Fst.        Exp9    ::= "fst" Exp10 ;
 Snd.        Exp9    ::= "snd" Exp10 ;
 
 Min.        Exp8    ::= "-" Exp9 ;
-Sqrt.       Exp8    ::= "sqrt" "(" Exp9 ")";
-Sin.        Exp8    ::= "sin" "(" Exp9 ")";
-Cos.        Exp8    ::= "cos" "(" Exp9 ")";
-EPow.       Exp8    ::= "exp" "(" Exp9 ")";
+Sqrt.       Exp8    ::= "sqrt" "(" Exp9 ")" ;
+Sin.        Exp8    ::= "sin" "(" Exp9 ")" ;
+Cos.        Exp8    ::= "cos" "(" Exp9 ")" ;
+EPow.       Exp8    ::= "exp" "(" Exp9 ")" ;
 Mul.        Exp6    ::= Exp6 "*" Exp7 ;
 Div.        Exp6    ::= Exp6 "/" Exp7 ;
 Mod.        Exp6    ::= Exp6 "%" Exp7 ;
@@ -45,9 +45,11 @@ Or.         Exp2    ::= Exp2 "or" Exp3 ;
 Ite.        Exp     ::= "if" "(" Exp ")" "then" Exp1 "else" Exp1 ;
 Match.      Exp     ::= "match" Exp "{" "L" Ident "->" Exp ";" "R" Ident "->" Exp "}" ;
 Tup.        Exp     ::= "(" Exp "," Exp")" ;
+Abstr.      Exp     ::= "lambda" Ident "->" Exp ;
 
 -- Separate grammar for types
 TDouble.    Type1   ::= "Double" ;
 TBool.      Type1   ::= "Bool" ;
+TFun.       Type    ::= Type "->" Type ;
 TProd.      Type    ::= "(" Type "," Type ")";
 TCoprod.    Type    ::= "[" Type "+" Type "]";

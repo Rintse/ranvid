@@ -141,9 +141,10 @@ instance Print Syntax.Grammar.Abs.Ident where
   prt _ (Syntax.Grammar.Abs.Ident i) = doc $ showString i
 instance Print Syntax.Grammar.Abs.Exp where
   prt i = \case
-    Syntax.Grammar.Abs.EVar var -> prPrec i 10 (concatD [prt 0 var])
+    Syntax.Grammar.Abs.Var id_ -> prPrec i 10 (concatD [prt 0 id_])
     Syntax.Grammar.Abs.EDVal dval -> prPrec i 10 (concatD [prt 0 dval])
     Syntax.Grammar.Abs.Rand -> prPrec i 10 (concatD [doc (showString "rand()")])
+    Syntax.Grammar.Abs.App exp1 exp2 -> prPrec i 10 (concatD [prt 10 exp1, prt 10 exp2])
     Syntax.Grammar.Abs.InL exp -> prPrec i 9 (concatD [doc (showString "left"), prt 10 exp])
     Syntax.Grammar.Abs.InR exp -> prPrec i 9 (concatD [doc (showString "right"), prt 10 exp])
     Syntax.Grammar.Abs.Fst exp -> prPrec i 9 (concatD [doc (showString "fst"), prt 10 exp])
@@ -170,18 +171,15 @@ instance Print Syntax.Grammar.Abs.Exp where
     Syntax.Grammar.Abs.Ite exp1 exp2 exp3 -> prPrec i 0 (concatD [doc (showString "if"), doc (showString "("), prt 0 exp1, doc (showString ")"), doc (showString "then"), prt 1 exp2, doc (showString "else"), prt 1 exp3])
     Syntax.Grammar.Abs.Match exp1 id_1 exp2 id_2 exp3 -> prPrec i 0 (concatD [doc (showString "match"), prt 0 exp1, doc (showString "{"), doc (showString "L"), prt 0 id_1, doc (showString "->"), prt 0 exp2, doc (showString ";"), doc (showString "R"), prt 0 id_2, doc (showString "->"), prt 0 exp3, doc (showString "}")])
     Syntax.Grammar.Abs.Tup exp1 exp2 -> prPrec i 0 (concatD [doc (showString "("), prt 0 exp1, doc (showString ","), prt 0 exp2, doc (showString ")")])
+    Syntax.Grammar.Abs.Abstr id_ exp -> prPrec i 0 (concatD [doc (showString "lambda"), prt 0 id_, doc (showString "->"), prt 0 exp])
 
 instance Print Syntax.Grammar.Abs.Type where
   prt i = \case
     Syntax.Grammar.Abs.TDouble -> prPrec i 1 (concatD [doc (showString "Double")])
     Syntax.Grammar.Abs.TBool -> prPrec i 1 (concatD [doc (showString "Bool")])
+    Syntax.Grammar.Abs.TFun type_1 type_2 -> prPrec i 0 (concatD [prt 0 type_1, doc (showString "->"), prt 0 type_2])
     Syntax.Grammar.Abs.TProd type_1 type_2 -> prPrec i 0 (concatD [doc (showString "("), prt 0 type_1, doc (showString ","), prt 0 type_2, doc (showString ")")])
     Syntax.Grammar.Abs.TCoprod type_1 type_2 -> prPrec i 0 (concatD [doc (showString "["), prt 0 type_1, doc (showString "+"), prt 0 type_2, doc (showString "]")])
-
-instance Print Syntax.Grammar.Abs.Var where
-  prt i = \case
-    Syntax.Grammar.Abs.XVar -> prPrec i 0 (concatD [doc (showString "x")])
-    Syntax.Grammar.Abs.YVar -> prPrec i 0 (concatD [doc (showString "y")])
 
 instance Print Syntax.Grammar.Abs.DVal where
   prt i = \case

@@ -11,9 +11,10 @@ import qualified Prelude as C (Eq, Ord, Show, Read)
 import qualified Data.String
 
 data Exp
-    = EVar Var
+    = Var Ident
     | EDVal DVal
     | Rand
+    | App Exp Exp
     | InL Exp
     | InR Exp
     | Fst Exp
@@ -40,12 +41,15 @@ data Exp
     | Ite Exp Exp Exp
     | Match Exp Ident Exp Ident Exp
     | Tup Exp Exp
+    | Abstr Ident Exp
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
-data Type = TDouble | TBool | TProd Type Type | TCoprod Type Type
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data Var = XVar | YVar
+data Type
+    = TDouble
+    | TBool
+    | TFun Type Type
+    | TProd Type Type
+    | TCoprod Type Type
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 data DVal = Val Double

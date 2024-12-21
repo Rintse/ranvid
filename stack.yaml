@@ -44,6 +44,8 @@ extra-deps:
   - inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
   - hip-1.5.6.0@sha256:296c55622f62485422c0a593c7306af1a5abf8ba9f866dcdffc281b01eba65d7,6988
   - repa-3.4.2.0
+  - git: https://github.com/Rintse/QuickCheck-GenT.git
+    commit: 90f50f0c0bba1c1b145c480e003c904bf06c4f30
   - monadic-recursion-schemes-0.1.13.2@sha256:9c5c733df1ab1e687f68091c8a30cdd6fea89f8871e583a095db708c58e66099,1760
 
 # Override default flag values for project packages and extra-deps

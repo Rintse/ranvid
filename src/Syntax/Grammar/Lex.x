@@ -151,23 +151,22 @@ eitherResIdent tv s = treeFind resWords
 -- | The keywords and symbols of the language organized as binary search tree.
 resWords :: BTree
 resWords =
-  b "[" 22
+  b "R" 21
     (b "/" 11
        (b "*" 6
           (b "%" 3 (b "!=" 2 (b "!" 1 N N) N) (b ")" 5 (b "(" 4 N N) N))
           (b "-" 9 (b "," 8 (b "+" 7 N N) N) (b "->" 10 N N)))
-       (b ">=" 17
-          (b "<=" 14
-             (b "<" 13 (b ";" 12 N N) N) (b ">" 16 (b "==" 15 N N) N))
-          (b "L" 20 (b "Double" 19 (b "Bool" 18 N N) N) (b "R" 21 N N))))
-    (b "rand()" 33
-       (b "fst" 28
-          (b "cos" 25
-             (b "and" 24 (b "]" 23 N N) N) (b "exp" 27 (b "else" 26 N N) N))
-          (b "match" 31 (b "left" 30 (b "if" 29 N N) N) (b "or" 32 N N)))
-       (b "then" 38
-          (b "snd" 36 (b "sin" 35 (b "right" 34 N N) N) (b "sqrt" 37 N N))
-          (b "{" 41 (b "y" 40 (b "x" 39 N N) N) (b "}" 42 N N))))
+       (b ">" 16
+          (b "<=" 14 (b "<" 13 (b ";" 12 N N) N) (b "==" 15 N N))
+          (b "Double" 19 (b "Bool" 18 (b ">=" 17 N N) N) (b "L" 20 N N))))
+    (b "match" 32
+       (b "exp" 27
+          (b "and" 24
+             (b "]" 23 (b "[" 22 N N) N) (b "else" 26 (b "cos" 25 N N) N))
+          (b "lambda" 30 (b "if" 29 (b "fst" 28 N N) N) (b "left" 31 N N)))
+       (b "snd" 37
+          (b "right" 35 (b "rand()" 34 (b "or" 33 N N) N) (b "sin" 36 N N))
+          (b "{" 40 (b "then" 39 (b "sqrt" 38 N N) N) (b "}" 41 N N))))
   where
   b s n = B bs (TS bs n)
     where
