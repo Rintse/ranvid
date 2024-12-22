@@ -28,7 +28,8 @@ main = do
     tripleWithRands <- case inFile of
         Just s -> parseExp s
         Nothing -> do
-            requiredType <- parseType "( Double , ( Double , Double ) )"
+            requiredType <- parseType 
+                "Double -> Double -> ( Double , ( Double , Double ) )"
             genExp requiredType seed
 
     let triple = fillRands tripleWithRands seed

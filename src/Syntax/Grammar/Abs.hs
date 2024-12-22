@@ -12,7 +12,7 @@ import qualified Data.String
 
 data Exp
     = Var Ident
-    | EDVal DVal
+    | DVal Double
     | Rand
     | App Exp Exp
     | InL Exp
@@ -50,9 +50,6 @@ data Type
     | TFun Type Type
     | TProd Type Type
     | TCoprod Type Type
-  deriving (C.Eq, C.Ord, C.Show, C.Read)
-
-data DVal = Val Double
   deriving (C.Eq, C.Ord, C.Show, C.Read)
 
 newtype Ident = Ident String

@@ -144,7 +144,7 @@ Exp10 :: { Syntax.Grammar.Abs.Exp }
 Exp10
   : '(' Exp ')' { $2 }
   | Ident { Syntax.Grammar.Abs.Var $1 }
-  | DVal { Syntax.Grammar.Abs.EDVal $1 }
+  | Double { Syntax.Grammar.Abs.DVal $1 }
   | 'rand()' { Syntax.Grammar.Abs.Rand }
   | Exp10 Exp10 { Syntax.Grammar.Abs.App $1 $2 }
 
@@ -163,9 +163,6 @@ Type1
 
 Type2 :: { Syntax.Grammar.Abs.Type }
 Type2 : '(' Type ')' { $2 }
-
-DVal :: { Syntax.Grammar.Abs.DVal }
-DVal : Double { Syntax.Grammar.Abs.Val $1 }
 
 {
 

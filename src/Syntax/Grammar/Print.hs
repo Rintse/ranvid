@@ -142,7 +142,7 @@ instance Print Syntax.Grammar.Abs.Ident where
 instance Print Syntax.Grammar.Abs.Exp where
   prt i = \case
     Syntax.Grammar.Abs.Var id_ -> prPrec i 10 (concatD [prt 0 id_])
-    Syntax.Grammar.Abs.EDVal dval -> prPrec i 10 (concatD [prt 0 dval])
+    Syntax.Grammar.Abs.DVal d -> prPrec i 10 (concatD [prt 0 d])
     Syntax.Grammar.Abs.Rand -> prPrec i 10 (concatD [doc (showString "rand()")])
     Syntax.Grammar.Abs.App exp1 exp2 -> prPrec i 10 (concatD [prt 10 exp1, prt 10 exp2])
     Syntax.Grammar.Abs.InL exp -> prPrec i 9 (concatD [doc (showString "left"), prt 10 exp])
@@ -180,7 +180,3 @@ instance Print Syntax.Grammar.Abs.Type where
     Syntax.Grammar.Abs.TFun type_1 type_2 -> prPrec i 0 (concatD [prt 0 type_1, doc (showString "->"), prt 0 type_2])
     Syntax.Grammar.Abs.TProd type_1 type_2 -> prPrec i 0 (concatD [doc (showString "("), prt 0 type_1, doc (showString ","), prt 0 type_2, doc (showString ")")])
     Syntax.Grammar.Abs.TCoprod type_1 type_2 -> prPrec i 0 (concatD [doc (showString "["), prt 0 type_1, doc (showString "+"), prt 0 type_2, doc (showString "]")])
-
-instance Print Syntax.Grammar.Abs.DVal where
-  prt i = \case
-    Syntax.Grammar.Abs.Val d -> prPrec i 0 (concatD [prt 0 d])

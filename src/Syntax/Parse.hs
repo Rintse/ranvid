@@ -8,7 +8,7 @@ import System.Exit
 
 getInvalidDoubles :: Exp -> [Double]
 getInvalidDoubles = cata go where
-    go (EDValF (Val d)) = [d | d < -1 || d > 1]
+    go (DValF d) = [d | d < -1 || d > 1]
     go other = concat other
 
 -- Parses contents of given input file

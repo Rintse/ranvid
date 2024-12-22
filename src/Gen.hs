@@ -28,9 +28,9 @@ import Debug.Trace (trace)
 import Test.QuickCheck.Gen (Gen(MkGen, unGen))
 
 maxRec :: Int
-maxRec = 5
+maxRec = 10
 minRec :: Int
-minRec = 3
+minRec = 4
 
 -- |Bound variables have a name and type, but also a weight, to be able 
 -- |to give higher chances of generating more inner variables
@@ -72,8 +72,8 @@ pickWeighted l = do
         | otherwise = select (n-k) xs
     select _ _  = error "select on empty list"
 
-arbitraryDVal :: GenMonad DVal
-arbitraryDVal = Val <$> QCT.choose (-1, 1)
+arbitraryDVal :: GenMonad Exp
+arbitraryDVal = DVal <$> QCT.choose (-1, 1)
 
 -- Get arbitrary variable identifier of the requested type
 pickVar :: [BoundVar] -> GenMonad Exp
@@ -93,7 +93,7 @@ genOfType TDouble = do
     -- TODO: only the side that is taken needs to be double in the product
     let genT = resize (size + 1) $ genOfType (TProd TDouble TDouble)
     validVars <- asks (filter ((==TDouble) . typ))
-    let varG = ([(050, pickVar validVars) | not (null validVars)])
+    let varG = ([(100, pickVar validVars) | not (null validVars)])
     -- All the ways (i can think of) to get to a double from other terms
     let nonLeafsG =
             [ (050, Min  <$> genD)
@@ -113,14 +113,13 @@ genOfType TDouble = do
             ]
     -- let varG = 
     let leafsG =
-           [ (050, EDVal <$> arbitraryDVal)
-           , (050, return Rand)
+           [ (020, arbitraryDVal)
+           , (020, return Rand)
            ] ++ varG
     let allNodesG = nonLeafsG ++ leafsG
-    trace ("genOfType(TDouble) [size = " ++ show size ++ "]")
-        if | size >= 0 && size < minRec -> pickWeightedG nonLeafsG
-           | size >= minRec && size < maxRec -> pickWeightedG allNodesG
-           | otherwise -> pickWeightedG leafsG
+    if | size >= 0 && size < minRec -> pickWeightedG nonLeafsG
+       | size >= minRec && size < maxRec -> pickWeightedG allNodesG
+       | otherwise -> pickWeightedG leafsG
 
 genOfType TBool = do
     size <- getSize
@@ -153,13 +152,13 @@ genOfType TBool = do
 
 genOfType (TProd a b) = do
     s <- getSize
-    trace ("genOfType(TDouble) [size = " ++ show s ++ "]")
-        Tup <$> resize (s + 1) (genOfType a) <*> resize (s+1) (genOfType b)
+    Tup <$> resize (s+1) (genOfType a) <*> resize (s+1) (genOfType b)
 genOfType (TFun a b) = do
+    s <- getSize
     varName <- newVarName
-    let body = local (withNewVar varName a) (genOfType b)
+    let body = local (withNewVar varName a) (resize (s+1) (genOfType b))
     Abstr (Ident varName) <$> body
-genOfType _ = return $ EDVal (Val 0)
+genOfType other = error $ "Cannot generate type: " ++ show other
 
 -- |Generate a random expression of type `t` with rng seeded to `seed`
 genExp :: Type -> String -> IO Exp

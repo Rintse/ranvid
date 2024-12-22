@@ -22,7 +22,7 @@ transIdent x = case x of
 transExp :: Syntax.Grammar.Abs.Exp -> Result
 transExp x = case x of
   Syntax.Grammar.Abs.Var ident -> failure x
-  Syntax.Grammar.Abs.EDVal dval -> failure x
+  Syntax.Grammar.Abs.DVal double -> failure x
   Syntax.Grammar.Abs.Rand -> failure x
   Syntax.Grammar.Abs.App exp1 exp2 -> failure x
   Syntax.Grammar.Abs.InL exp -> failure x
@@ -60,7 +60,3 @@ transType x = case x of
   Syntax.Grammar.Abs.TFun type_1 type_2 -> failure x
   Syntax.Grammar.Abs.TProd type_1 type_2 -> failure x
   Syntax.Grammar.Abs.TCoprod type_1 type_2 -> failure x
-
-transDVal :: Syntax.Grammar.Abs.DVal -> Result
-transDVal x = case x of
-  Syntax.Grammar.Abs.Val double -> failure x

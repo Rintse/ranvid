@@ -90,7 +90,7 @@ All other symbols are terminals.
   |  |  **|**  | ``snd`` //Exp10//
   | //Exp10// | -> | ``(`` //Exp// ``)``
   |  |  **|**  | //Ident//
-  |  |  **|**  | //DVal//
+  |  |  **|**  | //Double//
   |  |  **|**  | ``rand()``
   |  |  **|**  | //Exp10// //Exp10//
   | //Type// | -> | //Type1//
@@ -101,7 +101,6 @@ All other symbols are terminals.
   |  |  **|**  | ``Double``
   |  |  **|**  | ``Bool``
   | //Type2// | -> | ``(`` //Type// ``)``
-  | //DVal// | -> | //Double//
 
 
 

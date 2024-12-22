@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Eval (
@@ -8,9 +7,9 @@ module Eval (
 
 import Syntax.AbsF
 import Syntax.Grammar.Abs
-import Value ( Value(..) )
+import Value ( Value(..), valToExp )
 
-import Control.Applicative ( liftA3, liftA2 )
+import Control.Applicative ( liftA2 )
 import Control.Monad.Reader
 import Data.Fixed ( mod' )
 import Control.Parallel.Strategies
@@ -18,9 +17,10 @@ import System.Exit (exitFailure)
 import Data.List (intercalate)
 import Control.Monad.Except ( MonadError(throwError), Except, runExcept )
 import Data.Either ( partitionEithers )
-import Data.Bifunctor (Bifunctor(first))
+import Data.Functor.Foldable (Recursive(project), Corecursive (ana))
 
 type RGBTup = (Double, Double, Double)
+type EvalMonad a = Except String a
 
 showRGBTup :: RGBTup -> String
 showRGBTup (r,g,b) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
@@ -49,12 +49,12 @@ valToRGB (Left e) = Left e
 
 -- |Generate a canvas for expression `e` with size `size`
 -- Runs in `p` parallel threads simultaneously
--- Expects all `Rand` nodes to already have been substituted for `EDVal`s
+-- Expects all `Rand` nodes to already have been substituted for `DVal`s
 generateRGBs :: Exp -> (Int, Int) -> Int -> Either String [[RGBTup]]
 generateRGBs e size p = do
-    let calcRow = map ( valToRGB . evalExp ) where
-            toEval = evalMonad (evalExpM e)
-            evalExp c = runExcept (runReaderT toEval c)
+    -- Seed the generated function with the X and Y coordinates through `App`s
+    let applyXY (cx, cy) = App (App e (DVal cx)) (DVal cy)
+    let calcRow = map ( valToRGB . runExcept . evalExpM . applyXY )
     let calcRows = map calcRow (canvas size)
 
     let results = if p > 1
@@ -94,14 +94,6 @@ divUnit a b
     | a == 0 && b == 0 = 0
     | abs a < abs b = a / b
     | otherwise = b / a
-
--- A monad for pogram evaluation, containing:
---   - A reader with the value for X and Y in this evaluation
---   - An error monad to express evaluation failure
-newtype EvalMonad a = EvalMonad {
-    evalMonad :: ReaderT (Double, Double) (Except String) a
-} deriving  ( Functor, Applicative, Monad
-            , MonadReader (Double, Double), MonadError String )
 
 -- |Evaluates 2 arguments and pairs them to allow for easy pattern matching
 eval2 :: Exp -> Exp -> EvalMonad (Value, Value)
@@ -143,16 +135,18 @@ evalBExp op e = evalExpM e >>= go where
         "Non-bool argument to boolean operator:\n" ++ show other
 
 -- |Substitue, in `e`, `x` for `s`
-substitute :: Exp -> Ident -> Exp -> Exp
-substitute e x s = e
--- substitute e x s = runReader (substM e) (x, s) where
---     substM = apoM go
---     go :: Exp -> ExpF Exp
---     go (Var v) = asks (fmap Left . project . doSub)
+substitute :: Ident -> Exp -> Exp -> Exp
+substitute (Ident x) s = ana go where
+    go :: Exp -> ExpF Exp
+    go v@(Var (Ident x')) = if x' == x
+        then project s
+        else project v
+    go other = project other
 
 evalExpM :: Exp -> EvalMonad Value
 evalExpM e = case e of
-    (EDVal (Val d)) -> return $ VVal d
+    (DVal d) -> return $ VVal d
+    -- arithmetic expressions
     (Min a) -> evalAExp negate a
     (Sqrt a) -> evalAExp sqrtPos a
     (Sin a) -> evalAExp sin a
@@ -163,21 +157,42 @@ evalExpM e = case e of
     (Mod a b) -> evalAExp2 a modUnit b
     (Add a b) -> evalAExp2 a addUnit b
     (Sub a b) -> evalAExp2 a subUnit b
+
+    -- Comparison operators
     (Eq a b) -> evalComp a (==) b
     (Lt a b) -> evalComp a (<) b
     (Gt a b) -> evalComp a (>) b
     (Neq a b) -> evalComp a (/=) b
     (Leq a b) -> evalComp a (<=) b
     (Geq a b) -> evalComp a (>=) b
+
+    -- Boolean operators
     (Not a) -> evalBExp not a
     (And a b) -> evalBExp2 a (&&) b
     (Or a b) -> evalBExp2 a (||) b
+
+    -- Functions
     (Abstr a b) -> return $ VFun a b
     (App a b) -> evalExpM a >>= doApp where
-        doApp (VFun i body) = evalExpM $ substitute body i b
-        doApp other = throwError $ "Invalid application:" ++ show other
+        doApp (VFun i body) = evalExpM $ substitute i b body
+        doApp other = throwError $ "Invalid application: " ++ show other
+
+    -- Products
+    (Tup a b) -> VPair <$> evalExpM a <*> evalExpM b
+    (Fst a) -> evalExpM a >>= doFst where
+        doFst (VPair x _) = return x
+        doFst other = throwError $ "Non-pair in fst: " ++ show other
+    (Snd a) -> evalExpM a >>= doSnd where
+        doSnd (VPair _ x) = return x
+        doSnd other = throwError $ "Non-pair in snd: " ++ show other
+
+    -- Branches
     (Ite c a b) -> evalExpM c >>= doIf where
         doIf (VBVal rb) = if rb then evalExpM a else evalExpM b
         doIf other = throwError $ "Non-bool in if condition: " ++ show other
-    (Tup a b) -> VPair <$> evalExpM a <*> evalExpM b
-    other -> throwError $ "WARNING: Not implemented: " ++ show other
+    (Match m x1 e1 x2 e2) -> evalExpM m >>= doMatch where
+        doMatch (VL l) = evalExpM $ substitute x1 e1 $ valToExp l
+        doMatch (VR r) = evalExpM $ substitute x2 e2 $ valToExp r
+        doMatch other = throwError $ "Non coproduct in match: " ++ show other
+
+    other -> throwError $ "Not implemented: " ++ show other

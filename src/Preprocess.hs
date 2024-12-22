@@ -31,10 +31,9 @@ fillRands e seed = do
     let g = mkStdGen $ intFromHash seed
     evalRand (fillRandsM e) g
 
--- Fill in `rand`s and recurse into `BExp`s (see `fillRandsBM`)
 fillRandsM :: Exp -> Rand StdGen Exp
 fillRandsM = anaM go where
-    go Rand = getRandomR (-1, 1) <&> EDValF . Val
+    go Rand = getRandomR (-1, 1) <&> DValF
     go other = return (project other)
 
 -- applyDouble2
