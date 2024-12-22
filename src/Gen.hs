@@ -28,24 +28,24 @@ import Debug.Trace (trace)
 import Test.QuickCheck.Gen (Gen(MkGen, unGen))
 
 maxRec :: Int
-maxRec = 2
+maxRec = 5
 minRec :: Int
-minRec = 0
+minRec = 3
 
 -- |Bound variables have a name and type, but also a weight, to be able 
 -- |to give higher chances of generating more inner variables
 data BoundVar = BoundVar {
-    weight :: Int,
+    weight :: Double,
     name :: String,
     typ :: Type
 } deriving (Show, Eq, Ord, Read)
 
 -- The factor to scale weights of previous vars when new binder is added
-varScale :: Int
-varScale = 2
+varScale :: Double
+varScale = 0.2
 
 scaleVar :: BoundVar -> BoundVar
-scaleVar v = v { weight = weight v `div` varScale }
+scaleVar v = v { weight = weight v * varScale }
 
 newtype GenMonad a = EvalMonad {
     genMonad :: GenT (Reader [BoundVar]) a
@@ -56,6 +56,14 @@ withNewVar :: String -> Type -> [BoundVar] -> [BoundVar]
 withNewVar n t = (BoundVar {weight=1, name=n, typ=t} :) . map scaleVar
 
 -- |Pick a random element in a weighted list under the generation monad
+pickWeightedG :: [(Int, GenMonad a)] -> GenMonad a
+pickWeightedG l = do
+    QCT.choose (0, sum (map fst l) -1) >>= (`select` l) where
+    select n ((k,x):xs)
+        | n <= k    = x
+        | otherwise = select (n-k) xs
+    select _ _  = error "select on empty list"
+
 pickWeighted :: [(Int, a)] -> GenMonad a
 pickWeighted l = do
     QCT.choose (0, sum (map fst l) -1) >>= (`select` l) where
@@ -68,11 +76,10 @@ arbitraryDVal :: GenMonad DVal
 arbitraryDVal = Val <$> QCT.choose (-1, 1)
 
 -- Get arbitrary variable identifier of the requested type
-arbitraryIdent :: Type -> GenMonad Ident
-arbitraryIdent t = do
-    let getWeightedVars = map (\x -> (weight x, x)) . filter ((==t) . typ)
-    var <- asks getWeightedVars >>= pickWeighted
-    return $ Ident $ name var
+pickVar :: [BoundVar] -> GenMonad Exp
+pickVar vars = do
+    let weightedVars = map (\x -> (round (weight x * 100) , x)) vars
+    Var . Ident . name <$> pickWeighted weightedVars
 
 newVarName :: GenMonad String
 newVarName = ("x" ++) . show <$> (QCT.choose (0, 9) :: GenMonad Int)
@@ -85,6 +92,8 @@ genOfType TDouble = do
     let genF = resize (size + 1) $ genOfType (TFun TDouble TDouble)
     -- TODO: only the side that is taken needs to be double in the product
     let genT = resize (size + 1) $ genOfType (TProd TDouble TDouble)
+    validVars <- asks (filter ((==TDouble) . typ))
+    let varG = ([(050, pickVar validVars) | not (null validVars)])
     -- All the ways (i can think of) to get to a double from other terms
     let nonLeafsG =
             [ (050, Min  <$> genD)
@@ -97,21 +106,21 @@ genOfType TDouble = do
             , (050, Mod  <$> genD <*> genD)
             , (050, Add  <$> genD <*> genD)
             , (050, Sub  <$> genD <*> genD)
-            -- , (050, Fst  <$> genT)
-            -- , (050, Snd  <$> genT)
-            -- , (050, App  <$> genF <*> genD)
-            -- , (050, Ite  <$> genB <*> genD <*> genD)
+            , (050, Fst  <$> genT)
+            , (050, Snd  <$> genT)
+            , (050, App  <$> genF <*> genD)
+            , (050, Ite  <$> genB <*> genD <*> genD)
             ]
+    -- let varG = 
     let leafsG =
            [ (050, EDVal <$> arbitraryDVal)
-           , (050, Var <$> arbitraryIdent TDouble)
            , (050, return Rand)
-           ]
+           ] ++ varG
     let allNodesG = nonLeafsG ++ leafsG
     trace ("genOfType(TDouble) [size = " ++ show size ++ "]")
-        join if | size >= 0 && size < minRec -> pickWeighted nonLeafsG
-                | size >= minRec && size < maxRec -> pickWeighted allNodesG
-                | otherwise -> pickWeighted leafsG
+        if | size >= 0 && size < minRec -> pickWeightedG nonLeafsG
+           | size >= minRec && size < maxRec -> pickWeightedG allNodesG
+           | otherwise -> pickWeightedG leafsG
 
 genOfType TBool = do
     size <- getSize
@@ -138,11 +147,11 @@ genOfType TBool = do
             , (050, Snd <$> genT)
             ]
     let allNodesG = stalksG ++ nonStalksG
-    join $ if size < maxRec
-        then pickWeighted stalksG
-        else pickWeighted allNodesG
+    if size < maxRec
+        then pickWeightedG stalksG
+        else pickWeightedG allNodesG
 
-genOfType (TProd a b) = do 
+genOfType (TProd a b) = do
     s <- getSize
     trace ("genOfType(TDouble) [size = " ++ show s ++ "]")
         Tup <$> resize (s + 1) (genOfType a) <*> resize (s+1) (genOfType b)

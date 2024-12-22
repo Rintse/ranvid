@@ -26,17 +26,6 @@ packages:
   original:
     hackage: repa-3.4.2.0
 - completed:
-    commit: 90f50f0c0bba1c1b145c480e003c904bf06c4f30
-    git: https://github.com/Rintse/QuickCheck-GenT.git
-    name: QuickCheck-GenT
-    pantry-tree:
-      sha256: 7f50b063fbb37cc654ff18cdf657ee81f6422b0609c847747f7b3c5ff36f26c7
-      size: 430
-    version: 0.2.2.1
-  original:
-    commit: 90f50f0c0bba1c1b145c480e003c904bf06c4f30
-    git: https://github.com/Rintse/QuickCheck-GenT.git
-- completed:
     hackage: monadic-recursion-schemes-0.1.13.2@sha256:9c5c733df1ab1e687f68091c8a30cdd6fea89f8871e583a095db708c58e66099,1760
     pantry-tree:
       sha256: d22d9d790b15da1c836522c8d1bb72790b360e902707eae477c9180deb2fe736
