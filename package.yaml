@@ -70,6 +70,7 @@ executables:
     source-dirs:         app
     ghc-options:
     - -threaded
+    - -prof
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:

@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE DeriveGeneric        #-}
-{-# LANGUAGE StandaloneDeriving   #-}
+{-# LANGUAGE MultiWayIf #-}
 -- TODO: make all of these not orphaned instances
 {-# OPTIONS -fno-warn-orphans #-}
 {-# OPTIONS_GHC -Wno-unused-imports #-}
@@ -15,14 +14,14 @@ import Syntax.Grammar.Print ( printTree )
 
 import Generic.Random
 import Data.HashMap.Lazy ( HashMap, empty )
-import Test.QuickCheck
+import Test.QuickCheck (Arbitrary, arbitrary)
 import GHC.Generics ( Generic )
 import Data.Binary.Get ( runGet, getInt64host )
 import Data.ByteString.Lazy.Char8 ( pack )
 import Test.QuickCheck.Random ( mkQCGen, QCGen )
-import Control.Monad.Reader ( Reader, runReader, MonadTrans (lift), ReaderT (runReaderT, ReaderT), MonadReader (local) )
+import Control.Monad.Reader ( Reader, runReader, MonadTrans (lift), ReaderT (runReaderT, ReaderT), MonadReader (local, ask), asks, join )
 import Control.Monad.Identity (Identity)
-import QuickCheck.GenT ( MonadGen ( liftGen ), runGenT, GenT, MonadGen )
+import QuickCheck.GenT ( MonadGen ( liftGen ), runGenT, GenT, MonadGen, getSize, resize)
 import qualified QuickCheck.GenT as QCT ( choose )
 import Data.Bifunctor (Bifunctor(second, first))
 import Debug.Trace (trace)
@@ -30,139 +29,127 @@ import Test.QuickCheck.Gen (Gen(MkGen, unGen))
 
 maxRec :: Int
 maxRec = 2
-
 minRec :: Int
 minRec = 0
 
-deriving instance Generic Ident
-deriving instance Generic Exp
+-- |Bound variables have a name and type, but also a weight, to be able 
+-- |to give higher chances of generating more inner variables
+data BoundVar = BoundVar {
+    weight :: Int,
+    name :: String,
+    typ :: Type
+} deriving (Show, Eq, Ord, Read)
 
-instance Arbitrary DVal where
-    arbitrary = Val <$> choose (-1, 1)
+-- The factor to scale weights of previous vars when new binder is added
+varScale :: Int
+varScale = 2
 
-instance Arbitrary Ident where
-    arbitrary = do
-        r <- choose (1, 9) :: Gen Int
-        return $ Ident $ "x" ++ show r
+scaleVar :: BoundVar -> BoundVar
+scaleVar v = v { weight = weight v `div` varScale }
 
 newtype GenMonad a = EvalMonad {
-    genMonad :: GenT (Reader (Int, (HashMap String Type)) ) a
+    genMonad :: GenT (Reader [BoundVar]) a
 } deriving  ( Functor, Applicative, Monad
-            , MonadReader (Int, HashMap String Type)
-            , MonadGen
-            )
+            , MonadReader [BoundVar], MonadGen )
 
--- genOfType TDouble = do
---     let options = [ (1, pure Rand), (1, pure Rand) ]
---     let gens = frequency options
---     c <- lift (choose (1,2) :: Gen Double)
---     return $ EDVal (Val c)
+withNewVar :: String -> Type -> [BoundVar] -> [BoundVar]
+withNewVar n t = (BoundVar {weight=1, name=n, typ=t} :) . map scaleVar
 
-freqM :: [(Int, GenMonad Exp)] -> GenMonad Exp
-freqM gs = do
-    QCT.choose (0, tot - 1) >>= (`select` gs) where
-        tot = sum (map fst gs)
-        select n ((k,x):xs)
-            | n <= k    = x
-            | otherwise = select (n-k) xs
-        select _ _  = error "pick on empty list"
+-- |Pick a random element in a weighted list under the generation monad
+pickWeighted :: [(Int, a)] -> GenMonad a
+pickWeighted l = do
+    QCT.choose (0, sum (map fst l) -1) >>= (`select` l) where
+    select n ((k,x):xs)
+        | n <= k    = return x
+        | otherwise = select (n-k) xs
+    select _ _  = error "select on empty list"
+
+arbitraryDVal :: GenMonad DVal
+arbitraryDVal = Val <$> QCT.choose (-1, 1)
+
+-- Get arbitrary variable identifier of the requested type
+arbitraryIdent :: Type -> GenMonad Ident
+arbitraryIdent t = do
+    let getWeightedVars = map (\x -> (weight x, x)) . filter ((==t) . typ)
+    var <- asks getWeightedVars >>= pickWeighted
+    return $ Ident $ name var
+
+newVarName :: GenMonad String
+newVarName = ("x" ++) . show <$> (QCT.choose (0, 9) :: GenMonad Int)
 
 genOfType :: Type -> GenMonad Exp
 genOfType TDouble = do
-    let genD = local (\x -> x) genOfType TDouble
-    let genB = genOfType TBool
-    -- test2 <- ask
-    -- test1 <- local (\x -> first (+1)) genB
-    let nonLeafsG size = 
-            [ (050, Min <$> genD )
-            -- , (050, return $ Sqrt genD)
-            -- , (050, return $ Sin  genD)
-            -- , (050, return $ Cos  genD)
-            -- , (050, return $ EPow genD)
-            -- , (050, return $ Mul  genD genD)
-            -- , (050, return $ Div  genD genD)
-            -- , (050, return $ Mod  genD genD)
-            -- , (050, return $ Add  genD genD)
-            -- , (050, return $ Sub  genD genD)
-            -- , (050, return $ Ite  genB genD genD)
-            -- TODO: fst/snd only make sense when function application exists
+    size <- getSize
+    let genD = resize (size + 1) $ genOfType TDouble
+    let genB = resize (size + 1) $ genOfType TBool
+    let genF = resize (size + 1) $ genOfType (TFun TDouble TDouble)
+    -- TODO: only the side that is taken needs to be double in the product
+    let genT = resize (size + 1) $ genOfType (TProd TDouble TDouble)
+    -- All the ways (i can think of) to get to a double from other terms
+    let nonLeafsG =
+            [ (050, Min  <$> genD)
+            , (050, Sqrt <$> genD)
+            , (050, Sin  <$> genD)
+            , (050, Cos  <$> genD)
+            , (050, EPow <$> genD)
+            , (050, Mul  <$> genD <*> genD)
+            , (050, Div  <$> genD <*> genD)
+            , (050, Mod  <$> genD <*> genD)
+            , (050, Add  <$> genD <*> genD)
+            , (050, Sub  <$> genD <*> genD)
+            -- , (050, Fst  <$> genT)
+            -- , (050, Snd  <$> genT)
+            -- , (050, App  <$> genF <*> genD)
+            -- , (050, Ite  <$> genB <*> genD <*> genD)
             ]
     let leafsG =
-            
-           -- [ (050, EDVal <$> (arbitrary :: Gen DVal))
-           [ (050, return Rand :: GenMonad Exp)
+           [ (050, EDVal <$> arbitraryDVal)
+           , (050, Var <$> arbitraryIdent TDouble)
+           , (050, return Rand)
            ]
-    let allNodesG size = nonLeafsG size ++ leafsG
-    -- let selectOnSize size
-    --         | size >= 0 && size < minRec = freqM $ nonLeafsG size
-    --         | size >= minRec && size < maxRec = freqM $ allNodesG size
-    --         | otherwise = freqM leafsG
-
-    -- s <- lift getSize
-    -- trace ("genOfType(TDouble) [size = " ++ show s ++ "]")
-    --     selectOnSize s
-    return Rand
-
+    let allNodesG = nonLeafsG ++ leafsG
+    trace ("genOfType(TDouble) [size = " ++ show size ++ "]")
+        join if | size >= 0 && size < minRec -> pickWeighted nonLeafsG
+                | size >= minRec && size < maxRec -> pickWeighted allNodesG
+                | otherwise -> pickWeighted leafsG
 
 genOfType TBool = do
-    let genDm = genOfType TDouble
-    let genBm = genOfType TBool
-    genD <- genOfType TDouble
-    genB <- genOfType TBool
-    let test = [ (050, Not <$> genDm) ] :: [(Int, GenMonad Exp)]
-    let stalksG size = map (second (resize (size + 1)))
-            [ (050, return $ Eq  genD genD)
-            , (050, return $ Lt  genD genD)
-            , (050, return $ Gt  genD genD)
-            , (050, return $ Neq genD genD)
-            , (050, return $ Leq genD genD)
-            , (050, return $ Geq genD genD)
+    size <- getSize
+    let genD = resize (size + 1) $ genOfType TDouble
+    let genB = resize (size + 1) $ genOfType TBool
+    let genF = resize (size + 1) $ genOfType (TFun TBool TBool)
+    -- TODO: only the side that is taken needs to be bool in the product
+    let genT = resize (size + 1) $ genOfType (TProd TBool TBool)
+    let stalksG =
+            [ (050, Eq  <$> genD <*> genD)
+            , (050, Lt  <$> genD <*> genD)
+            , (050, Gt  <$> genD <*> genD)
+            , (050, Neq <$> genD <*> genD)
+            , (050, Leq <$> genD <*> genD)
+            , (050, Geq <$> genD <*> genD)
             ]
-    let nonStalksG size = map (second (resize (size + 1)))
-            [ (100, return $ Not genB )
-            , (100, return $ And genB genB)
-            , (100, return $ Or  genB genB)
+    let nonStalksG =
+            [ (100, Not <$> genB)
+            , (100, And <$> genB <*> genB)
+            , (100, Or  <$> genB <*> genB)
+            , (050, App <$> genF <*> genB)
+            , (100, Ite <$> genB <*> genB <*> genB)
+            , (050, Fst <$> genT)
+            , (050, Snd <$> genT)
             ]
-    let allNodesG size = stalksG size ++ nonStalksG size
-    -- let selectOnSize size
-    --         | size < maxRec = frequency $ stalksG size
-    --         | otherwise = frequency $ allNodesG size
+    let allNodesG = stalksG ++ nonStalksG
+    join $ if size < maxRec
+        then pickWeighted stalksG
+        else pickWeighted allNodesG
 
-    -- s <- lift getSize
-    -- trace ("genOfType(TBool) [size = " ++ show s ++ "]")
-    --     lift $ sized selectOnSize
-    return Rand
-
--- genOfType TBool = sized selectOnSize where
---     selectOnSize size
---             | size < maxRec = frequency $ stalksG size
---             | otherwise = frequency $ allNodesG size
---     -- When max depth is reached, recurse back into Exp with comparission 
---     -- operators, which will generate leafs immediately (hence `stalks`)
---     stalksG size = 
---         [ (050, resize (size + 1) $ Eq  <$> genD <*> genD)
---         , (050, resize (size + 1) $ Lt  <$> genD <*> genD)
---         , (050, resize (size + 1) $ Gt  <$> genD <*> genD)
---         , (050, resize (size + 1) $ Neq <$> genD <*> genD)
---         , (050, resize (size + 1) $ Leq <$> genD <*> genD)
---         , (050, resize (size + 1) $ Geq <$> genD <*> genD)
---         ]
---     nonStalksG size = 
---         [ (100, resize (size + 1) $ Not <$> genB)
---         , (100, resize (size + 1) $ And <$> genB <*> genB)
---         , (100, resize (size + 1) $ Or  <$> genB <*> genB)
---         ]
---     allNodesG size = stalksG size ++ nonStalksG size
---     genD = genOfType TDouble
---     genB = genOfType TBool
-
--- genBody :: Type -> Reader (String, Type)
--- genBody t = 
-
-genOfType (TProd a b) = Tup <$> genOfType a <*> genOfType b
--- genOfType (TFun _ b) = do 
---     let body = genOfType b
-    -- Abstr 
+genOfType (TProd a b) = do 
+    s <- getSize
+    trace ("genOfType(TDouble) [size = " ++ show s ++ "]")
+        Tup <$> resize (s + 1) (genOfType a) <*> resize (s+1) (genOfType b)
+genOfType (TFun a b) = do
+    varName <- newVarName
+    let body = local (withNewVar varName a) (genOfType b)
+    Abstr (Ident varName) <$> body
 genOfType _ = return $ EDVal (Val 0)
 
 -- |Generate a random expression of type `t` with rng seeded to `seed`
@@ -174,7 +161,6 @@ genExp t seed = do
     let intFromHash s = fromIntegral $ runGet getInt64host (pack s)
     let rng = mkQCGen $ intFromHash seed
 
-    -- let gen = runReaderT (genMonad $ genOfType t) (0, empty)
     let gen = runGenT (genMonad $ genOfType t)
     let reader = unGen gen rng 0
-    return $ runReader reader (0, empty)
+    return $ runReader reader []
