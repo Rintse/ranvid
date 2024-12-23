@@ -14,7 +14,7 @@ import Syntax.Grammar.Print ( printTree )
 
 import Generic.Random
 import Data.HashMap.Lazy ( HashMap, empty )
-import Test.QuickCheck as QC (Arbitrary, arbitrary, frequency, Gen)
+import qualified Test.QuickCheck as QC (Arbitrary, arbitrary, frequency, Gen, resize)
 import GHC.Generics ( Generic )
 import Data.Binary.Get ( runGet, getInt64host )
 import Data.ByteString.Lazy.Char8 ( pack )
@@ -27,9 +27,9 @@ import Debug.Trace (trace)
 import Test.QuickCheck.Gen (Gen(unGen))
 
 maxRec :: Int
-maxRec = 15
+maxRec = 16
 minRec :: Int
-minRec = 10
+minRec = 8
 
 -- |Bound variables have a name and type, but also a weight, to be able 
 -- |to give higher chances of generating more inner variables
@@ -83,19 +83,20 @@ newVarName = asks ((("x" ++) . show) . length)
 genOfType' :: Type -> GenMonad Exp
 genOfType' TDouble = do
     size <- getSize
-    -- TODO: this type is now 1/3rd of the remaining budget..? 
+    -- TODO: this type is now with depth 1/5rd of the remaining budget..? 
     -- make this choice non-arbitrary somehow?
     typG <- resize (size `div` 5) genType -- random type
-    let genD = resize (size + 1) $ genOfType TDouble
-    let genB = resize (size + 1) $ genOfType TBool
-    let genF = resize (size + 1) $ genOfType (TFun typG TDouble)
-    let genA = resize (size + 1) $ genOfType typG
-    let genL = resize (size + 1) $ genOfType (TProd TDouble typG)
-    let genR = resize (size + 1) $ genOfType (TProd typG TDouble)
+    let genD = resize (size - 1) $ genOfType TDouble
+    let genB = resize (size - 1) $ genOfType TBool
+    let genF = resize (size - 1) $ genOfType (TFun typG TDouble)
+    let genA = resize (size - 1) $ genOfType typG
+    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
+    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
 
     validVars <- asks (filter ((==TDouble) . typ))
-    let varG = ([(100, pickVar validVars) | not (null validVars)])
+    let varG = ([(200, pickVar validVars) | not (null validVars)])
 
+    -- These ones just discard the second half immediately, so don't bother
     -- All the ways (i can think of) to get to a double from other terms
     let nonLeafsG =
             [ (050, Min  <$> genD)
@@ -108,9 +109,9 @@ genOfType' TDouble = do
             , (050, Mod  <$> genD <*> genD)
             , (050, Add  <$> genD <*> genD)
             , (050, Sub  <$> genD <*> genD)
-            , (050, Fst  <$> genL)
-            , (050, Snd  <$> genR)
             , (050, App  <$> genF <*> genA)
+            , (000, Fst  <$> genL)
+            , (000, Snd  <$> genR)
             , (050, Ite  <$> genB <*> genD <*> genD)
             ]
     let leafsG =
@@ -118,8 +119,8 @@ genOfType' TDouble = do
            , (020, return Rand)
            ] ++ varG
     let allNodesG = nonLeafsG ++ leafsG
-    if | size >= 0 && size < minRec -> pickWeightedG nonLeafsG
-       | size >= minRec && size < maxRec -> pickWeightedG allNodesG
+    if | size >= maxRec - minRec -> pickWeightedG nonLeafsG
+       | size >= 0 && size >= maxRec - minRec -> pickWeightedG allNodesG
        | otherwise -> pickWeightedG leafsG
 
 genOfType' TBool = do
@@ -127,15 +128,15 @@ genOfType' TBool = do
     -- TODO: this type is now 1/3rd of the remaining budget..? 
     -- make this choice non-arbitrary somehow?
     typG <- resize (size `div` 5) genType -- random type
-    let genD = resize (size + 1) $ genOfType TDouble
-    let genB = resize (size + 1) $ genOfType TBool
-    let genF = resize (size + 1) $ genOfType (TFun typG TBool)
-    let genA = resize (size + 1) $ genOfType typG
-    let genL = resize (size + 1) $ genOfType (TProd TBool typG)
-    let genR = resize (size + 1) $ genOfType (TProd typG TBool)
+    let genD = resize (size - 1) $ genOfType TDouble
+    let genB = resize (size - 1) $ genOfType TBool
+    let genF = resize (size - 1) $ genOfType (TFun typG TBool)
+    let genA = resize (size - 1) $ genOfType typG
+    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
+    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
 
     validVars <- asks (filter ((==TBool) . typ))
-    let varG = ([(100, pickVar validVars) | not (null validVars)])
+    let varG = ([(200, pickVar validVars) | not (null validVars)])
 
     let stalksG =
             [ (050, Eq  <$> genD <*> genD)
@@ -149,23 +150,38 @@ genOfType' TBool = do
             [ (100, Not <$> genB)
             , (100, And <$> genB <*> genB)
             , (100, Or  <$> genB <*> genB)
+            , (000, Fst  <$> genL)
+            , (000, Snd  <$> genR)
             , (050, App <$> genF <*> genA)
             , (100, Ite <$> genB <*> genB <*> genB)
-            , (050, Fst <$> genL)
-            , (050, Snd <$> genR)
             ]
     let allNodesG = stalksG ++ nonStalksG
-    if size >= maxRec
+    if size <= 1
         then pickWeightedG stalksG
         else pickWeightedG allNodesG
 
-genOfType' (TProd a b) = do
-    s <- getSize
-    Tup <$> resize (s+1) (genOfType a) <*> resize (s+1) (genOfType b)
+genOfType' t@(TProd a b) = do
+    size <- getSize
+    typG <- resize (size `div` 5) genType -- random type
+    let genA = resize (size - 1) $ genOfType a
+    let genB = resize (size - 1) $ genOfType b
+    let genF = resize (size - 1) $ genOfType (TFun typG t)
+    let genP = resize (size - 1) $ genOfType typG
+    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
+    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
+    let nodes = 
+            [ (100, Tup <$> genA <*> genB )
+            , (050, App <$> genF <*> genP)
+            , (000, Fst  <$> genL)
+            , (000, Snd  <$> genR)
+            ]
+    pickWeightedG nodes
+
 genOfType' (TFun a b) = do
     s <- getSize
     varName <- newVarName
-    let body = local (withNewVar varName a) (resize (s+1) (genOfType b))
+    let bodyG = resize (s-1) (genOfType b)
+    let body = local (withNewVar varName a) bodyG
     Abstr (Ident varName) <$> body
 genOfType' other = error $ "Cannot generate type: " ++ show other
 
@@ -187,7 +203,6 @@ genType = sized go where
                 [ (100, pure TDouble )
                 , (100, pure TBool )
                 ]
-        let allNodes = nonLeafs ++ leafs
         trace ("genType [size = " ++ show size ++ "]")
             $ if size <= 0
                 then pickWeightedG leafs
@@ -203,5 +218,5 @@ genExp t seed = do
     let rng = mkQCGen $ intFromHash seed
 
     let gen = runGenT (genMonad $ genOfType t)
-    let reader = unGen gen rng 0
+    let reader = unGen gen rng maxRec
     return $ runReader reader []
