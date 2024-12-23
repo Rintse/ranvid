@@ -7,15 +7,13 @@ import System.IO as IO
 import System.Exit
 import System.Environment
 import System.Random ( uniformR, mkStdGen, randomIO )
-import Data.List.Split ( splitOn )
 import Data.Char
-import Text.Printf (printf)
 
 printableChars :: (Int, Int)
 printableChars = (48, 121)
 
-defaultCanvasSize :: (Int, Int)
-defaultCanvasSize = (512, 512)
+defaultCanvasSize :: Int
+defaultCanvasSize = 512
 
 randomSeed :: IO String
 randomSeed = do
@@ -25,7 +23,7 @@ randomSeed = do
 
 -- The option list
 data Options = Options
-    { optSize       :: (Int, Int)
+    { optSize       :: Int
     , optParallel   :: Int
     , optSeedHash   :: String
     , optInputFile  :: Maybe String
@@ -65,15 +63,7 @@ readParallel :: String -> Options -> IO Options
 readParallel arg opt = return opt { optParallel = read arg }
 
 readSize :: String -> Options -> IO Options
-readSize arg opt = do
-    size <- case splitOn "x" arg of
-        [size1] -> return (read size1, read size1)
-        [size1, size2] -> return (read size1, read size2)
-        _ -> do
-            printf "WARNING: Invalid size '%s'\n" arg
-            uncurry (printf "Taking default size (%d, %d)\n") defaultCanvasSize
-            return defaultCanvasSize
-    return opt { optSize = size }
+readSize arg opt = return opt { optSize = read arg }
 
 -- Outputs a help message
 putHelp :: Options -> IO Options
@@ -98,7 +88,7 @@ options =
         "The amount of threads to run in parallel when evaluating the image"
 
     , Option "S" ["size"] (ReqArg Args.readSize "SIZE")
-        "The size of the image to generate (X for square of size X, else WxH)"
+        "The size of the MIDI to generate (amount of 8th notes)"
 
     , Option "h" ["help"] (NoArg putHelp)
         "Display help message"

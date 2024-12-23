@@ -31,8 +31,7 @@ typeSpec = "Double -> Double -> ( Double , ( Double , Double ) )"
 
 main :: IO ()
 main = do
-    Options { optVerbose = verb
-            , optSize = canvasSize
+    Options { optSize = canvasSize
             , optParallel = parallel
             , optInputFile = inFile
             , optOutputFile = outFile
@@ -40,20 +39,20 @@ main = do
             } <- getOpts
 
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
-    tripleWithRands <- case inFile of
+    expression <- case inFile of
         Just s -> parseExp s
         Nothing -> do
             requiredType <- parseType typeSpec
             genExp requiredType seed
 
-    let triple = fillRands tripleWithRands seed
+    let filled_expression = fillRands expression seed
     printf "Using the expression [depth=%s, size=%s]:\n"
-        (show $ expDepth triple)
-        (show $ expSize triple)
-    putStrLn $ printTree triple
+        (show $ expDepth filled_expression)
+        (show $ expSize filled_expression)
+    putStrLn $ printTree filled_expression
 
-    let simplified = triple
-    -- let simplified = simplifyTrip triple
+    -- TODO: add simplification back in
+    let simplified = filled_expression
     -- printf "Simplified to [depth=%s, size=%s]:" 
     --     (showTripDepths simplified)
     --     (showTripSizes simplified)
