@@ -65,9 +65,9 @@ library:
   - Syntax.Grammar.Print
 
 executables:
-  ranvid:
+  ranvid_img:
     main:                Main.hs
-    source-dirs:         app
+    source-dirs:         app_image
     ghc-options:
     - -threaded
     - -rtsopts

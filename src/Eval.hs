@@ -1,8 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 module Eval (
-    RGBTup, generateRGBs, checkRGBs,
-    expUnit, sqrtPos, modUnit, addUnit, subUnit, divUnit,
+    expUnit, sqrtPos, modUnit, addUnit, subUnit, divUnit, evalExpM
 ) where
 
 import Syntax.AbsF
@@ -10,72 +9,11 @@ import Syntax.Grammar.Abs
 import Value ( Value(..), valToExp )
 
 import Control.Applicative ( liftA2 )
-import Control.Monad.Reader
 import Data.Fixed ( mod' )
-import Control.Parallel.Strategies
-import System.Exit (exitFailure)
-import Data.List (intercalate)
-import Control.Monad.Except ( MonadError(throwError), Except, runExcept )
-import Data.Either ( partitionEithers )
+import Control.Monad.Except ( MonadError(throwError), Except )
 import Data.Functor.Foldable (Recursive(project), Corecursive (ana))
 
-type RGBTup = (Double, Double, Double)
 type EvalMonad a = Except String a
-
-showRGBTup :: RGBTup -> String
-showRGBTup (r,g,b) = "(" ++ show r ++ ", " ++ show g ++ ", " ++ show b ++ ")"
-
--- |A 2d list where each element is a tuple of its coordinates
--- All the coordinates are normalized to lie within the [-1, 1] range
-canvas :: (Int, Int) -> [[(Double, Double)]]
-canvas (w, h) = do
-    let scaleCoord maxC c = (fromIntegral c / fromIntegral maxC) * 2 - 1
-    let widths = map (scaleCoord w) [0..w-1]
-    let heights = map (scaleCoord h) [0..h-1]
-    map (zip widths . replicate w) heights
-
--- The arithmetic operations are defined on [-1, 1]
--- We need to convert to the required [0, 1] interval for rgb values
-scalePixel :: (Double, Double, Double) -> (Double, Double, Double)
-scalePixel = f3 (\c -> (c + 1) / 2) where f3 f (a, b, c) = (f a, f b, f c)
-
-valToRGB :: Either String Value -> Either String RGBTup
-valToRGB (Right (VPair (VVal r) (VPair (VVal g) (VVal b)))) =
-    Right $ scalePixel (r, g, b)
-valToRGB (Right (VPair (VPair (VVal r) (VVal g)) (VVal b))) =
-    Right $ scalePixel (r, g, b)
-valToRGB (Right other) = Left $ "Did not get a 3-tuple of doubles: " ++ show other
-valToRGB (Left e) = Left e
-
--- |Generate a canvas for expression `e` with size `size`
--- Runs in `p` parallel threads simultaneously
--- Expects all `Rand` nodes to already have been substituted for `DVal`s
-generateRGBs :: Exp -> (Int, Int) -> Int -> Either String [[RGBTup]]
-generateRGBs e size p = do
-    -- Seed the generated function with the X and Y coordinates through `App`s
-    let applyXY (cx, cy) = App (App e (DVal cx)) (DVal cy)
-    let calcRow = map ( valToRGB . runExcept . evalExpM . applyXY )
-    let calcRows = map calcRow (canvas size)
-
-    let results = if p > 1
-        then calcRows `using` parListChunk p rdeepseq
-        else calcRows
-
-    let (errors, rgbs) = unzip (map partitionEithers results)
-    case concat errors of
-        [] -> return rgbs
-        (err:_) -> throwError $ "Error generating RGBS: " ++ err
-
-checkRGBs :: [[RGBTup]] -> IO ()
-checkRGBs rgbs = do
-    let invalids = concatMap (filter isInvalidPixel) rgbs where
-            isInvalidPixel (r, g, b) = invalid r || invalid g || invalid b
-            invalid c = c < 0 || c > 1
-
-    unless (null invalids) $ do
-        putStrLn $ "ERROR: Invalid RGB values: \n  - "
-            ++ intercalate "\n  - " (map showRGBTup invalids)
-        exitFailure
 
 -- Custom operators that go ([-1, 1], [-1, 1]) -> [-1, 1] or that filter
 -- out some undefined inputs and just return 0 in that case

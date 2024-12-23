@@ -31,10 +31,8 @@ custom-setup
 
 library
   exposed-modules:
-      Args
       Eval
       Gen
-      Image
       Preprocess
       Syntax.AbsF
       Syntax.Grammar.Skel
@@ -77,14 +75,16 @@ library
     , unordered-containers
   default-language: Haskell2010
 
-executable ranvid
+executable ranvid_img
   main-is: Main.hs
   other-modules:
+      Args
+      Image
       Paths_ranvid
   autogen-modules:
       Paths_ranvid
   hs-source-dirs:
-      app
+      app_image
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
