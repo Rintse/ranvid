@@ -23,7 +23,6 @@ main = do
             , optSeedHash = seed
             } <- getOpts
 
-
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
     tripleWithRands <- case inFile of
         Just s -> parseExp s

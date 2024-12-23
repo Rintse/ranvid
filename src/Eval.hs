@@ -44,7 +44,7 @@ valToRGB (Right (VPair (VVal r) (VPair (VVal g) (VVal b)))) =
     Right $ scalePixel (r, g, b)
 valToRGB (Right (VPair (VPair (VVal r) (VVal g)) (VVal b))) =
     Right $ scalePixel (r, g, b)
-valToRGB (Right _) = Left "Evaluation did not give a 3-tuple of doubles"
+valToRGB (Right other) = Left $ "Did not get a 3-tuple of doubles: " ++ show other
 valToRGB (Left e) = Left e
 
 -- |Generate a canvas for expression `e` with size `size`
