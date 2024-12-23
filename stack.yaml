@@ -41,13 +41,14 @@ packages:
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
 extra-deps:
-  - inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
-  - repa-3.4.2.0
   - git: https://github.com/Rintse/QuickCheck-GenT.git
     commit: 56a6774841608e9849b93547e4eaaf7e035fe0c9
   - git: https://github.com/Rintse/hip.git
     commit: fb91394c260415e60ddb3507f49cf1188b243827
+  - inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
+  - repa-3.4.2.0
   - monadic-recursion-schemes-0.1.13.2@sha256:9c5c733df1ab1e687f68091c8a30cdd6fea89f8871e583a095db708c58e66099,1760
+  - haskore-0.2.0.8@sha256:ef242b910c37e87ca5c52c42628adf40d8bf71cbf225686d14a8064012f72b03,6079
 
 # Override default flag values for project packages and extra-deps
 # flags: {}
@@ -80,4 +81,5 @@ allow-newer: true
 allow-newer-deps: 
 - repa
 - monadic-recursion-schemes
+- haskore
 install-ghc: true

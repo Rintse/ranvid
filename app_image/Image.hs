@@ -1,6 +1,6 @@
 module Image ( rgbsToImg, RGBTup, generateRGBs, checkRGBs ) where
 
-import Eval (evalExpM)
+import Eval ( evalExpM )
 import Value ( Value (..) )
 import Syntax.Grammar.Abs ( Exp (..) )
 import Graphics.Image.Interface.Vector ( VU(..) )
@@ -9,7 +9,7 @@ import Control.Monad.Except ( MonadError(throwError), runExcept )
 import Control.Monad (unless)
 import Data.Either ( partitionEithers )
 import Data.List ( intercalate )
-import Control.Parallel.Strategies
+import Control.Parallel.Strategies ( using, parListChunk, rdeepseq )
 import System.Exit ( exitFailure )
 
 type RGBTup = (Double, Double, Double)

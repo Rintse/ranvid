@@ -23,7 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - split
 - parallel
-# - haskore >= 0.2.2.4
+- haskore
 - unordered-containers
 - mtl
 - hip
@@ -76,12 +76,12 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - ranvid
-  # ranvid_music:
-  #   main:                Main.hs
-  #   source-dirs:         app_music
-  #   ghc-options:
-  #   - -threaded
-  #   - -rtsopts
-  #   - -with-rtsopts=-N
-  #   dependencies:
-  #   - ranvid
+  ranvid_music:
+    main:                Main.hs
+    source-dirs:         app_music
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - ranvid

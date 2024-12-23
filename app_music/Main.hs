@@ -13,14 +13,18 @@ import Syntax.Grammar.Print ( printTree )
 import Syntax.Parse ( parseExp, parseType )
 import Preprocess ( fillRands, expDepth, expSize )
 import Args ( getOpts, Options(..) )
+import Music ( generateNotes, toSong )
 import Gen ( genExp )
 
 import Text.Printf (printf)
+import Haskore.Interface.MIDI.Render (playLinux, playAlsa, playTimidity)
+import GHC.IO.Exception (ExitCode)
+import System.Exit (exitFailure)
 
 typeSpec :: String
 typeSpec = "Double -> ( ( Double , Double ) )"
 
-main :: IO ()
+main :: IO ExitCode
 main = do
     Options { optSize = canvasSize
             , optParallel = parallel
@@ -30,27 +34,28 @@ main = do
             } <- getOpts
 
     putStrLn $ "Seeded with first 8 bytes of: " ++ seed
-    tripleWithRands <- case inFile of
+    expression <- case inFile of
         Just s -> parseExp s
         Nothing -> do
             requiredType <- parseType typeSpec
             genExp requiredType seed
 
-    let triple = fillRands tripleWithRands seed
+    let filled_expression = fillRands expression seed
     printf "Using the expression [depth=%s, size=%s]:\n"
-        (show $ expDepth triple)
-        (show $ expSize triple)
-    putStrLn $ printTree triple
+        (show $ expDepth filled_expression)
+        (show $ expSize filled_expression)
+    putStrLn $ printTree filled_expression
 
-    let simplified = triple
-    return ()
+    let simplified = filled_expression
     -- let simplified = simplifyTrip triple
     -- printf "Simplified to [depth=%s, size=%s]:" 
     --     (showTripDepths simplified)
     --     (showTripSizes simplified)
     -- putStrLn $ printTree simplified
 
-    case generateRGBs simplified canvasSize parallel of
-        Left err -> putStrLn $ "Could not generate RGBs: " ++ err
-        Right notes -> do
-            return ()
+    case generateNotes simplified canvasSize parallel of
+        Left err -> do
+            putStrLn $ "Could not generate notes: " ++ err
+            exitFailure
+        Right notes -> do 
+            playTimidity $ toSong notes

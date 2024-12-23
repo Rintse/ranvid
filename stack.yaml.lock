@@ -5,20 +5,6 @@
 
 packages:
 - completed:
-    hackage: inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
-    pantry-tree:
-      sha256: 999f1189f7e52e17b765063373fd3d936f9648f675dfd63ce3a34ba70195a36b
-      size: 407
-  original:
-    hackage: inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
-- completed:
-    hackage: repa-3.4.2.0@sha256:855d4e0521f7bdb3ff9fcd331626166a0186dea3652808d555697322724bf7df,3559
-    pantry-tree:
-      sha256: db96c1cc8f15ad8aeaff7f7b886f1780dbd876f3c6d34452281192db2d51ba73
-      size: 2965
-  original:
-    hackage: repa-3.4.2.0
-- completed:
     commit: 56a6774841608e9849b93547e4eaaf7e035fe0c9
     git: https://github.com/Rintse/QuickCheck-GenT.git
     name: QuickCheck-GenT
@@ -41,12 +27,33 @@ packages:
     commit: fb91394c260415e60ddb3507f49cf1188b243827
     git: https://github.com/Rintse/hip.git
 - completed:
+    hackage: inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
+    pantry-tree:
+      sha256: 999f1189f7e52e17b765063373fd3d936f9648f675dfd63ce3a34ba70195a36b
+      size: 407
+  original:
+    hackage: inflist-0.0.1@sha256:f78bb0b472e43dc475c1d9345dde5bafd554a0b780e7638235e6f25f71f3083d,1089
+- completed:
+    hackage: repa-3.4.2.0@sha256:855d4e0521f7bdb3ff9fcd331626166a0186dea3652808d555697322724bf7df,3559
+    pantry-tree:
+      sha256: db96c1cc8f15ad8aeaff7f7b886f1780dbd876f3c6d34452281192db2d51ba73
+      size: 2965
+  original:
+    hackage: repa-3.4.2.0
+- completed:
     hackage: monadic-recursion-schemes-0.1.13.2@sha256:9c5c733df1ab1e687f68091c8a30cdd6fea89f8871e583a095db708c58e66099,1760
     pantry-tree:
       sha256: d22d9d790b15da1c836522c8d1bb72790b360e902707eae477c9180deb2fe736
       size: 356
   original:
     hackage: monadic-recursion-schemes-0.1.13.2@sha256:9c5c733df1ab1e687f68091c8a30cdd6fea89f8871e583a095db708c58e66099,1760
+- completed:
+    hackage: haskore-0.2.0.8@sha256:ef242b910c37e87ca5c52c42628adf40d8bf71cbf225686d14a8064012f72b03,6079
+    pantry-tree:
+      sha256: cfd89a65434fb8b151db4b37b3dba8ccbe7cf7cfa831761f60bd377ec3627fb2
+      size: 7774
+  original:
+    hackage: haskore-0.2.0.8@sha256:ef242b910c37e87ca5c52c42628adf40d8bf71cbf225686d14a8064012f72b03,6079
 snapshots:
 - completed:
     sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146
