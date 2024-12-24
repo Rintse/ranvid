@@ -28,6 +28,7 @@ import Text.Printf (printf)
 
 typeSpec :: String
 typeSpec = "Double -> Double -> ( Double , ( Double , Double ) )"
+-- typeSpec = "Double -> Double"
 
 main :: IO ()
 main = do

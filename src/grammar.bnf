@@ -8,8 +8,10 @@ coercions Type 2 ;
 -- TODO: incorporate this custom double in the [-1, 1] interval ?
 -- token UnitDouble  (('0' | '1') '.' digit+ ('e' '-'? digit+)?) ;
 
+BTrue.      Exp10   ::= "true" ;
+BFalse.      Exp10   ::= "false" ;
 Var.        Exp10   ::= Ident ;
-DVal.      Exp10   ::= Double ;
+DVal.       Exp10   ::= Double ;
 Rand.       Exp10   ::= "rand()" ;
 
 App.        Exp10   ::= Exp10 Exp10 ;

@@ -44,6 +44,59 @@ Ask for term of type `Double` $\times$ (`Bool` $\times$ `Int`):
 3. Do $t = Gen($**`Double`**$)$, $s = Gen($**`Double`** $\times$ **`Bool`**$)$
 4. Construct `(t, s)`
 
+## Generate (A)
+
+Example value: `A = Double`
+
+A term: `0.1`
+
+**OR***
+
+```
+order :: (Double, Double) -> (Double, Double) =
+lambda p -> 
+    if fst p < snd p
+        then (fst p, snd p)
+        else (snd p, fst p)
+```
+A term: 
+```
+fst (
+    order ( 
+        ( lambda x -> 
+            ( (x * x4) % x5, (x * x5) % x4 ) 
+        ) 0.2
+    ) 
+)
+```
+
+
+## Generate (A -> B)
+
+Example values: `A = Double, B = Double`
+
+A term: `lambda x -> x + 1`  
+B term: `0.2`
+
+***OR***
+
+A term: 
+```
+(lambda f -> 
+    lamba x -> 
+        if x4 > 0 
+            then f x 
+            else f (f x) 
+) (lambda x -> x + 1)
+```
+Goes to:
+```
+lamba x -> 
+    if x4 > 0 
+        then (lambda x -> x + 1) x
+        else (lambda x -> x + 1) ((lambda x -> x + 1) x) 
+```
+B term: `0.2`
 
 # Interpreter
 TODO

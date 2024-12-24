@@ -52,20 +52,22 @@ import Syntax.Grammar.Lex
   'cos'    { PT _ (TS _ 25) }
   'else'   { PT _ (TS _ 26) }
   'exp'    { PT _ (TS _ 27) }
-  'fst'    { PT _ (TS _ 28) }
-  'if'     { PT _ (TS _ 29) }
-  'lambda' { PT _ (TS _ 30) }
-  'left'   { PT _ (TS _ 31) }
-  'match'  { PT _ (TS _ 32) }
-  'or'     { PT _ (TS _ 33) }
-  'rand()' { PT _ (TS _ 34) }
-  'right'  { PT _ (TS _ 35) }
-  'sin'    { PT _ (TS _ 36) }
-  'snd'    { PT _ (TS _ 37) }
-  'sqrt'   { PT _ (TS _ 38) }
-  'then'   { PT _ (TS _ 39) }
-  '{'      { PT _ (TS _ 40) }
-  '}'      { PT _ (TS _ 41) }
+  'false'  { PT _ (TS _ 28) }
+  'fst'    { PT _ (TS _ 29) }
+  'if'     { PT _ (TS _ 30) }
+  'lambda' { PT _ (TS _ 31) }
+  'left'   { PT _ (TS _ 32) }
+  'match'  { PT _ (TS _ 33) }
+  'or'     { PT _ (TS _ 34) }
+  'rand()' { PT _ (TS _ 35) }
+  'right'  { PT _ (TS _ 36) }
+  'sin'    { PT _ (TS _ 37) }
+  'snd'    { PT _ (TS _ 38) }
+  'sqrt'   { PT _ (TS _ 39) }
+  'then'   { PT _ (TS _ 40) }
+  'true'   { PT _ (TS _ 41) }
+  '{'      { PT _ (TS _ 42) }
+  '}'      { PT _ (TS _ 43) }
   L_Ident  { PT _ (TV $$)   }
   L_doubl  { PT _ (TD $$)   }
 
@@ -143,6 +145,8 @@ Exp9
 Exp10 :: { Syntax.Grammar.Abs.Exp }
 Exp10
   : '(' Exp ')' { $2 }
+  | 'true' { Syntax.Grammar.Abs.BTrue }
+  | 'false' { Syntax.Grammar.Abs.BFalse }
   | Ident { Syntax.Grammar.Abs.Var $1 }
   | Double { Syntax.Grammar.Abs.DVal $1 }
   | 'rand()' { Syntax.Grammar.Abs.Rand }

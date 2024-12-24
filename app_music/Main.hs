@@ -22,7 +22,7 @@ import GHC.IO.Exception (ExitCode)
 import System.Exit (exitFailure)
 
 typeSpec :: String
-typeSpec = "Double -> ( ( Double , Double ) )"
+typeSpec = "Double -> [ Double + [ (Double, Double) + (Double, (Double, Double)) ] ]"
 
 main :: IO ExitCode
 main = do

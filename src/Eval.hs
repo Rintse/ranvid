@@ -104,7 +104,9 @@ evalExpM e = case e of
     (Leq a b) -> evalComp a (<=) b
     (Geq a b) -> evalComp a (>=) b
 
-    -- Boolean operators
+    -- Boolean (operators)
+    BTrue -> return $ VBVal True
+    BFalse -> return $ VBVal False
     (Not a) -> evalBExp not a
     (And a b) -> evalBExp2 a (&&) b
     (Or a b) -> evalBExp2 a (||) b
@@ -124,13 +126,16 @@ evalExpM e = case e of
         doSnd (VPair _ x) = return x
         doSnd other = throwError $ "Non-pair in snd: " ++ show other
 
-    -- Branches
-    (Ite c a b) -> evalExpM c >>= doIf where
-        doIf (VBVal rb) = if rb then evalExpM a else evalExpM b
-        doIf other = throwError $ "Non-bool in if condition: " ++ show other
+    -- Coproducts
+    (InL a) -> VL <$> evalExpM a
+    (InR a) -> VL <$> evalExpM a
     (Match m x1 e1 x2 e2) -> evalExpM m >>= doMatch where
         doMatch (VL l) = evalExpM $ substitute x1 e1 $ valToExp l
         doMatch (VR r) = evalExpM $ substitute x2 e2 $ valToExp r
         doMatch other = throwError $ "Non coproduct in match: " ++ show other
+
+    (Ite c a b) -> evalExpM c >>= doIf where
+        doIf (VBVal rb) = if rb then evalExpM a else evalExpM b
+        doIf other = throwError $ "Non-bool in if condition: " ++ show other
 
     other -> throwError $ "Not implemented: " ++ show other

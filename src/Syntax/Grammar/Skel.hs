@@ -21,6 +21,8 @@ transIdent x = case x of
 
 transExp :: Syntax.Grammar.Abs.Exp -> Result
 transExp x = case x of
+  Syntax.Grammar.Abs.BTrue -> failure x
+  Syntax.Grammar.Abs.BFalse -> failure x
   Syntax.Grammar.Abs.Var ident -> failure x
   Syntax.Grammar.Abs.DVal double -> failure x
   Syntax.Grammar.Abs.Rand -> failure x

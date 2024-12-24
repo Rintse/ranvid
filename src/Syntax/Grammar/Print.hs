@@ -141,6 +141,8 @@ instance Print Syntax.Grammar.Abs.Ident where
   prt _ (Syntax.Grammar.Abs.Ident i) = doc $ showString i
 instance Print Syntax.Grammar.Abs.Exp where
   prt i = \case
+    Syntax.Grammar.Abs.BTrue -> prPrec i 10 (concatD [doc (showString "true")])
+    Syntax.Grammar.Abs.BFalse -> prPrec i 10 (concatD [doc (showString "false")])
     Syntax.Grammar.Abs.Var id_ -> prPrec i 10 (concatD [prt 0 id_])
     Syntax.Grammar.Abs.DVal d -> prPrec i 10 (concatD [prt 0 d])
     Syntax.Grammar.Abs.Rand -> prPrec i 10 (concatD [doc (showString "rand()")])

@@ -25,11 +25,14 @@ import QuickCheck.GenT ( MonadGen ( liftGen ), runGenT, GenT, MonadGen, getSize,
 import Data.Bifunctor (Bifunctor(second, first))
 import Debug.Trace (trace)
 import Test.QuickCheck.Gen (Gen(unGen))
+import Preprocess (typeDepth)
 
 maxRec :: Int
-maxRec = 16
+maxRec = 5
 minRec :: Int
-minRec = 8
+minRec = 2
+
+-- TODO: dont generate (fst tup) etc when there are no variables in scope
 
 -- |Bound variables have a name and type, but also a weight, to be able 
 -- |to give higher chances of generating more inner variables
@@ -39,20 +42,19 @@ data BoundVar = BoundVar {
     typ :: Type
 } deriving (Show, Eq, Ord, Read)
 
--- The factor to scale weights of previous vars when new binder is added
+-- The factor to scale weights of existing vars when new binder is added
 varScale :: Double
 varScale = 0.8
 
-scaleVar :: BoundVar -> BoundVar
-scaleVar v = v { weight = weight v * varScale }
+-- |Insert new variable and scale all the existing ones
+withNewVar :: String -> Type -> [BoundVar] -> [BoundVar]
+withNewVar n t = (BoundVar {weight=1, name=n, typ=t} :) . map scaleVar where
+    scaleVar v = v { weight = weight v * varScale }
 
 newtype GenMonad a = EvalMonad {
     genMonad :: GenT (Reader [BoundVar]) a
 } deriving  ( Functor, Applicative, Monad
             , MonadReader [BoundVar], MonadGen )
-
-withNewVar :: String -> Type -> [BoundVar] -> [BoundVar]
-withNewVar n t = (BoundVar {weight=1, name=n, typ=t} :) . map scaleVar
 
 -- |Pick a random element in a weighted list under the generation monad
 pickWeightedG :: [(Int, GenMonad a)] -> GenMonad a
@@ -81,114 +83,193 @@ newVarName :: GenMonad String
 newVarName = asks ((("x" ++) . show) . length)
 
 genOfType' :: Type -> GenMonad Exp
-genOfType' TDouble = do
+genOfType' t@TDouble = do
     size <- getSize
     -- TODO: this type is now with depth 1/5rd of the remaining budget..? 
     -- make this choice non-arbitrary somehow?
-    typG <- resize (size `div` 5) genType -- random type
-    let genD = resize (size - 1) $ genOfType TDouble
-    let genB = resize (size - 1) $ genOfType TBool
-    let genF = resize (size - 1) $ genOfType (TFun typG TDouble)
-    let genA = resize (size - 1) $ genOfType typG
-    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
-    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
+    randomType <- resize 0 genType
+    let genDouble = resize (size - 1) $ genOfType TDouble
+    let genBool = resize (size - 1) $ genOfType TBool
+    let genFunction = resize (size - 1) $ genOfType (TFun randomType t)
+    let genArg = resize (size - 1) $ genOfType randomType
+    let genLeft = resize (size - 1) $ genOfType (TProd t randomType)
+    let genRight = resize (size - 1) $ genOfType (TProd randomType t)
+    validVars <- asks (filter ((==t) . typ))
 
-    validVars <- asks (filter ((==TDouble) . typ))
-    let varG = ([(200, pickVar validVars) | not (null validVars)])
-
-    -- These ones just discard the second half immediately, so don't bother
     -- All the ways (i can think of) to get to a double from other terms
     let nonLeafsG =
-            [ (050, Min  <$> genD)
-            , (050, Sqrt <$> genD)
-            , (050, Sin  <$> genD)
-            , (050, Cos  <$> genD)
-            , (050, EPow <$> genD)
-            , (050, Mul  <$> genD <*> genD)
-            , (050, Div  <$> genD <*> genD)
-            , (050, Mod  <$> genD <*> genD)
-            , (050, Add  <$> genD <*> genD)
-            , (050, Sub  <$> genD <*> genD)
-            , (050, App  <$> genF <*> genA)
-            , (000, Fst  <$> genL)
-            , (000, Snd  <$> genR)
-            , (050, Ite  <$> genB <*> genD <*> genD)
+            [ (050, Min  <$> genDouble)
+            , (050, Sqrt <$> genDouble)
+            , (050, Sin  <$> genDouble)
+            , (050, Cos  <$> genDouble)
+            , (050, EPow <$> genDouble)
+            , (050, Mul  <$> genDouble <*> genDouble)
+            , (050, Div  <$> genDouble <*> genDouble)
+            , (050, Mod  <$> genDouble <*> genDouble)
+            , (050, Add  <$> genDouble <*> genDouble)
+            , (050, Sub  <$> genDouble <*> genDouble)
+            , (050, Ite  <$> genBool <*> genDouble <*> genDouble)
+            , (020, App  <$> genFunction <*> genArg)
+            , (020, Fst  <$> genLeft)
+            , (020, Snd  <$> genRight)
             ]
     let leafsG =
-           [ (020, DVal <$> choose (-1, 1))
-           , (020, return Rand)
-           ] ++ varG
+           [ (050, DVal <$> choose (-1, 1))
+           , (050, return Rand)
+           ] ++ 
+           [ (100, pickVar validVars) | not (null validVars) ]
     let allNodesG = nonLeafsG ++ leafsG
-    if | size >= maxRec - minRec -> pickWeightedG nonLeafsG
+
+    notInFunc <- asks null
+    if | notInFunc -> pickWeightedG leafsG
+       | size >= maxRec - minRec -> pickWeightedG nonLeafsG
        | size >= 0 && size >= maxRec - minRec -> pickWeightedG allNodesG
        | otherwise -> pickWeightedG leafsG
 
-genOfType' TBool = do
-    size <- getSize
-    -- TODO: this type is now 1/3rd of the remaining budget..? 
-    -- make this choice non-arbitrary somehow?
-    typG <- resize (size `div` 5) genType -- random type
-    let genD = resize (size - 1) $ genOfType TDouble
-    let genB = resize (size - 1) $ genOfType TBool
-    let genF = resize (size - 1) $ genOfType (TFun typG TBool)
-    let genA = resize (size - 1) $ genOfType typG
-    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
-    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
 
+genOfType' t@TBool = do
+    size <- getSize
+    randomType <- resize 0 genType
+    let genDouble = resize (size - 1) $ genOfType TDouble
+    let genBool = resize (size - 1) $ genOfType TBool
+    let genFunction = resize (size - 1) $ genOfType (TFun randomType t)
+    let genArg = resize (size - 1) $ genOfType randomType
+    let genLeft = resize (size - 1) $ genOfType (TProd t randomType)
+    let genRight = resize (size - 1) $ genOfType (TProd randomType t)
     validVars <- asks (filter ((==TBool) . typ))
-    let varG = ([(200, pickVar validVars) | not (null validVars)])
 
     let stalksG =
-            [ (050, Eq  <$> genD <*> genD)
-            , (050, Lt  <$> genD <*> genD)
-            , (050, Gt  <$> genD <*> genD)
-            , (050, Neq <$> genD <*> genD)
-            , (050, Leq <$> genD <*> genD)
-            , (050, Geq <$> genD <*> genD)
-            ] ++ varG
+            [ (050, Eq  <$> genDouble <*> genDouble)
+            , (050, Lt  <$> genDouble <*> genDouble)
+            , (050, Gt  <$> genDouble <*> genDouble)
+            , (050, Neq <$> genDouble <*> genDouble)
+            , (050, Leq <$> genDouble <*> genDouble)
+            , (050, Geq <$> genDouble <*> genDouble)
+            ] ++ 
+            [ (100, pickVar validVars) | not (null validVars) ]
     let nonStalksG =
-            [ (100, Not <$> genB)
-            , (100, And <$> genB <*> genB)
-            , (100, Or  <$> genB <*> genB)
-            , (000, Fst  <$> genL)
-            , (000, Snd  <$> genR)
-            , (050, App <$> genF <*> genA)
-            , (100, Ite <$> genB <*> genB <*> genB)
+            [ (100, Not <$> genBool)
+            , (100, And <$> genBool <*> genBool)
+            , (100, Or  <$> genBool <*> genBool)
+            , (050, Fst <$> genLeft)
+            , (050, Snd <$> genRight)
+            , (050, App <$> genFunction <*> genArg)
+            , (050, Ite <$> genBool <*> genBool <*> genBool)
             ]
-    let allNodesG = stalksG ++ nonStalksG
-    if size <= 1
-        then pickWeightedG stalksG
-        else pickWeightedG allNodesG
+    let notInFuncG = [ (100, return BTrue) , (100, return BFalse) ]
+
+    notInFunc <- asks null
+    if | notInFunc -> pickWeightedG notInFuncG
+       | size >= 1 -> pickWeightedG nonStalksG
+       | otherwise -> pickWeightedG stalksG
+
 
 genOfType' t@(TProd a b) = do
     size <- getSize
-    typG <- resize (size `div` 5) genType -- random type
+    randomType <- resize 0 genType
+    let genFunction = resize (size - 1) $ genOfType (TFun randomType t)
+    let genArg = resize (size - 1) $ genOfType randomType
+    let genLeft = resize (size - 1) $ genOfType (TProd t randomType)
+    let genRight = resize (size - 1) $ genOfType (TProd randomType t)
+    let genBool = resize (size - 1) $ genOfType TBool
+    let genSelf = resize (size - 1) $ genOfType t
+    validVars <- asks (filter ((==t) . typ))
+
+    -- Products can also be a tuple of the input types
     let genA = resize (size - 1) $ genOfType a
     let genB = resize (size - 1) $ genOfType b
-    let genF = resize (size - 1) $ genOfType (TFun typG t)
-    let genP = resize (size - 1) $ genOfType typG
-    let genL = resize (size - 1) $ genOfType (TFun TDouble typG)
-    let genR = resize (size - 1) $ genOfType (TFun typG TDouble)
-    let nodes = 
-            [ (100, Tup <$> genA <*> genB )
-            , (050, App <$> genF <*> genP)
-            , (000, Fst  <$> genL)
-            , (000, Snd  <$> genR)
-            ]
-    pickWeightedG nodes
 
-genOfType' (TFun a b) = do
-    s <- getSize
+    let deeperG = 
+            [ (020, App <$> genFunction <*> genArg)
+            , (020, Fst <$> genLeft)
+            , (020, Snd <$> genRight)
+            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            ]
+    let termG = 
+            [ (100, Tup <$> genA <*> genB ) ] ++
+            [ (200, pickVar validVars) | not (null validVars) ]
+    let notInFuncG = termG ++ [(020, App <$> genFunction <*> genArg)]
+    let allG = deeperG ++ termG
+
+    notInFunc <- asks null
+    let notInFunc = True
+    if | notInFunc -> pickWeightedG notInFuncG
+       | size >= 1 -> pickWeightedG allG
+       | otherwise -> pickWeightedG termG
+
+genOfType' t@(TFun a b) = do
+    size <- getSize
+    randomType <- resize 0 genType
+    let genFunction = resize (size - 1) $ genOfType (TFun randomType t)
+    let genArg = resize (size - 1) $ genOfType randomType
+    let genLeft = resize (size - 1) $ genOfType (TProd t randomType)
+    let genRight = resize (size - 1) $ genOfType (TProd randomType t)
+    let genBool = resize (size - 1) $ genOfType TBool
+    let genSelf = resize (size - 1) $ genOfType t
+    validVars <- asks (filter ((==t) . typ))
+
+    -- Functions type terms can also be abstractions where the body is generated
+    -- with the knowledge of the variable that was just introduced
     varName <- newVarName
-    let bodyG = resize (s-1) (genOfType b)
+    let bodyG = resize (size - 1) (genOfType b)
     let body = local (withNewVar varName a) bodyG
-    Abstr (Ident varName) <$> body
-genOfType' other = error $ "Cannot generate type: " ++ show other
+
+    let deeperG = 
+            [ (020, App <$> genFunction <*> genArg)
+            , (020, Fst <$> genLeft)
+            , (020, Snd <$> genRight)
+            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            ]
+    let termG = 
+            [ (100, Abstr (Ident varName) <$> body) ] ++
+            [ (100, pickVar validVars) | not (null validVars) ]
+    let notInFuncG = termG
+    let allG = deeperG ++ termG
+
+    notInFunc <- asks null
+    -- let notInFunc = True
+    if | notInFunc -> pickWeightedG notInFuncG
+       | size >= 1 -> pickWeightedG allG
+       | otherwise -> pickWeightedG termG
+
+genOfType' t@(TCoprod a b) = do
+    size <- getSize
+    randomType <- resize 0 genType
+    let genLeft = resize (size - 1) $ genOfType (TProd t randomType)
+    let genRight = resize (size - 1) $ genOfType (TProd randomType t)
+    let genFunction = resize (size - 1) $ genOfType (TFun randomType t)
+    let genArg = resize (size - 1) $ genOfType randomType
+    let genSelf = resize (size - 1) $ genOfType t
+    let genBool = resize (size - 1) $ genOfType TBool
+    validVars <- asks (filter ((==t) . typ))
+    
+    -- Coproducts can also be injections of the input types
+    let genA = resize (size - 1) $ genOfType a
+    let genB = resize (size - 1) $ genOfType b
+
+    let deeperG = 
+            [ (020, App <$> genFunction <*> genArg)
+            , (020, Fst <$> genLeft)
+            , (020, Snd <$> genRight)
+            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            ]
+    let termG = 
+            [ (100, InL <$> genA )
+            , (100, InR <$> genB ) ] ++
+            [ (100, pickVar validVars) | not (null validVars) ]
+    let notInFuncG = termG ++ [(020, App <$> genFunction <*> genArg)]
+    let allG = deeperG ++ termG
+
+    notInFunc <- asks null -- no bounded variables
+    if | notInFunc -> pickWeightedG notInFuncG
+       | size >= maxRec - minRec -> pickWeightedG deeperG
+       | size >= 0 && size >= maxRec - minRec -> pickWeightedG allG
+       | otherwise -> pickWeightedG termG
 
 genOfType :: Type -> GenMonad Exp
 genOfType t = do
     size <- getSize
-    trace ("genOfType(" ++ show t ++ ") [" ++ show size ++ "]") $ genOfType' t
+    trace ("genOfType(" ++ show t ++ ") [size = " ++ show size ++ "]") $ genOfType' t
 
 genType :: GenMonad Type
 genType = sized go where
@@ -203,10 +284,11 @@ genType = sized go where
                 [ (100, pure TDouble )
                 , (100, pure TBool )
                 ]
+        let allNodes = nonLeafs ++ leafs
         trace ("genType [size = " ++ show size ++ "]")
             $ if size <= 0
                 then pickWeightedG leafs
-                else  pickWeightedG nonLeafs
+                else  pickWeightedG allNodes
 
 -- |Generate a random expression of type `t` with rng seeded to `seed`
 genExp :: Type -> String -> IO Exp
@@ -218,5 +300,5 @@ genExp t seed = do
     let rng = mkQCGen $ intFromHash seed
 
     let gen = runGenT (genMonad $ genOfType t)
-    let reader = unGen gen rng maxRec
+    let reader = unGen gen rng (maxRec + typeDepth t) 
     return $ runReader reader []

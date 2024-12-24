@@ -1,4 +1,4 @@
-module Preprocess ( fillRands, expDepth, expSize) where
+module Preprocess ( fillRands, typeDepth, expDepth, expSize ) where
 
 import Syntax.Grammar.Abs
 import Syntax.AbsF
@@ -14,9 +14,10 @@ import Data.Functor ( (<&>) )
 
 -- |The depth of the expression (height of the tree)
 expDepth :: Exp -> Int
-expDepth = cata go where
-    go :: ExpF Int -> Int
-    go other = 1 + foldr max 0 other
+expDepth = cata go where go other = 1 + foldr max 0 other
+
+typeDepth :: Type -> Int
+typeDepth = cata go where go other = 1 + foldr max 0 other
 
 -- |The size of the expression (number of nodes)
 expSize :: Exp -> Int

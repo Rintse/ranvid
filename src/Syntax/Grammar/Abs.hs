@@ -11,7 +11,9 @@ import qualified Prelude as C (Eq, Ord, Show, Read)
 import qualified Data.String
 
 data Exp
-    = Var Ident
+    = BTrue
+    | BFalse
+    | Var Ident
     | DVal Double
     | Rand
     | App Exp Exp
