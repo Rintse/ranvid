@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -23,9 +24,13 @@ import Control.Monad.Reader ( Reader, runReader, MonadTrans (lift), ReaderT (run
 import Control.Monad.Identity (Identity)
 import QuickCheck.GenT ( MonadGen ( liftGen ), runGenT, GenT, MonadGen, getSize, resize, oneof, sized, choose)
 import Data.Bifunctor (Bifunctor(second, first))
-import Debug.Trace (trace)
 import Test.QuickCheck.Gen (Gen(unGen))
-import Preprocess (typeDepth)
+import Preprocess ( typeDepth )
+#ifdef DEBUG
+import Debug.Trace ( trace )
+#else
+import Debug.NoTrace ( trace )
+#endif
 
 maxRec :: Int
 maxRec = 5
@@ -98,26 +103,26 @@ genOfType' t@TDouble = do
 
     -- All the ways (i can think of) to get to a double from other terms
     let nonLeafsG =
-            [ (050, Min  <$> genDouble)
-            , (050, Sqrt <$> genDouble)
-            , (050, Sin  <$> genDouble)
-            , (050, Cos  <$> genDouble)
-            , (050, EPow <$> genDouble)
-            , (050, Mul  <$> genDouble <*> genDouble)
-            , (050, Div  <$> genDouble <*> genDouble)
-            , (050, Mod  <$> genDouble <*> genDouble)
-            , (050, Add  <$> genDouble <*> genDouble)
-            , (050, Sub  <$> genDouble <*> genDouble)
-            , (050, Ite  <$> genBool <*> genDouble <*> genDouble)
-            , (020, App  <$> genFunction <*> genArg)
-            , (020, Fst  <$> genLeft)
-            , (020, Snd  <$> genRight)
+            [ (050, trace "Min"  $ Min   <$> genDouble)
+            , (050, trace "Sqrt" $ Sqrt  <$> genDouble)
+            , (050, trace "Sin"  $ Sin   <$> genDouble)
+            , (050, trace "Cos"  $ Cos   <$> genDouble)
+            , (050, trace "EPow" $ EPow  <$> genDouble)
+            , (050, trace "Mul"  $ Mul   <$> genDouble <*> genDouble)
+            , (050, trace "Div"  $ Div   <$> genDouble <*> genDouble)
+            , (050, trace "Mod"  $ Mod   <$> genDouble <*> genDouble)
+            , (050, trace "Add"  $ Add   <$> genDouble <*> genDouble)
+            , (050, trace "Sub"  $ Sub   <$> genDouble <*> genDouble)
+            , (050, trace "Ite"  $ Ite   <$> genBool <*> genDouble <*> genDouble)
+            , (010, trace "App"  $ App   <$> genFunction <*> genArg)
+            , (010, trace "Fst"  $ Fst   <$> genLeft)
+            , (010, trace "Snd"  $ Snd   <$> genRight)
             ]
     let leafsG =
-           [ (050, DVal <$> choose (-1, 1))
-           , (050, return Rand)
+           [ (100, trace "DVal" $ DVal <$> choose (-1, 1))
+           , (100, trace "Rand" $ return Rand)
            ] ++ 
-           [ (100, pickVar validVars) | not (null validVars) ]
+           [ (200, pickVar validVars) | not (null validVars) ]
     let allNodesG = nonLeafsG ++ leafsG
 
     notInFunc <- asks null
@@ -139,22 +144,22 @@ genOfType' t@TBool = do
     validVars <- asks (filter ((==TBool) . typ))
 
     let stalksG =
-            [ (050, Eq  <$> genDouble <*> genDouble)
-            , (050, Lt  <$> genDouble <*> genDouble)
-            , (050, Gt  <$> genDouble <*> genDouble)
-            , (050, Neq <$> genDouble <*> genDouble)
-            , (050, Leq <$> genDouble <*> genDouble)
-            , (050, Geq <$> genDouble <*> genDouble)
+            [ (050, trace "Eq"  $ Eq  <$> genDouble <*> genDouble)
+            , (050, trace "Lt"  $ Lt  <$> genDouble <*> genDouble)
+            , (050, trace "Gt"  $ Gt  <$> genDouble <*> genDouble)
+            , (050, trace "Neq" $ Neq <$> genDouble <*> genDouble)
+            , (050, trace "Leq" $ Leq <$> genDouble <*> genDouble)
+            , (050, trace "Geq" $ Geq <$> genDouble <*> genDouble)
             ] ++ 
             [ (100, pickVar validVars) | not (null validVars) ]
     let nonStalksG =
-            [ (100, Not <$> genBool)
-            , (100, And <$> genBool <*> genBool)
-            , (100, Or  <$> genBool <*> genBool)
-            , (050, Fst <$> genLeft)
-            , (050, Snd <$> genRight)
-            , (050, App <$> genFunction <*> genArg)
-            , (050, Ite <$> genBool <*> genBool <*> genBool)
+            [ (100, trace "Not" $ Not <$> genBool)
+            , (100, trace "And" $ And <$> genBool <*> genBool)
+            , (100, trace "Or"  $ Or  <$> genBool <*> genBool)
+            , (050, trace "Fst" $ Fst <$> genLeft)
+            , (050, trace "Snd" $ Snd <$> genRight)
+            , (050, trace "App" $ App <$> genFunction <*> genArg)
+            , (050, trace "Ite" $ Ite <$> genBool <*> genBool <*> genBool)
             ]
     let notInFuncG = [ (100, return BTrue) , (100, return BFalse) ]
 
@@ -180,14 +185,14 @@ genOfType' t@(TProd a b) = do
     let genB = resize (size - 1) $ genOfType b
 
     let deeperG = 
-            [ (020, App <$> genFunction <*> genArg)
-            , (020, Fst <$> genLeft)
-            , (020, Snd <$> genRight)
-            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            [ (020, trace "App" $ App <$> genFunction <*> genArg)
+            , (020, trace "Fst" $ Fst <$> genLeft)
+            , (020, trace "Snd" $ Snd <$> genRight)
+            , (020, trace "Ite" $ Ite <$> genBool <*> genSelf <*> genSelf )
             ]
     let termG = 
-            [ (100, Tup <$> genA <*> genB ) ] ++
-            [ (200, pickVar validVars) | not (null validVars) ]
+            [ (100, trace "Tup" $ Tup <$> genA <*> genB ) ] ++
+            [ (200, trace "pickVar" $ pickVar validVars) | not (null validVars) ]
     let notInFuncG = termG ++ [(020, App <$> genFunction <*> genArg)]
     let allG = deeperG ++ termG
 
@@ -215,14 +220,14 @@ genOfType' t@(TFun a b) = do
     let body = local (withNewVar varName a) bodyG
 
     let deeperG = 
-            [ (020, App <$> genFunction <*> genArg)
-            , (020, Fst <$> genLeft)
-            , (020, Snd <$> genRight)
-            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            [ (020, trace "App" $ App <$> genFunction <*> genArg)
+            , (020, trace "Fst" $ Fst <$> genLeft)
+            , (020, trace "Snd" $ Snd <$> genRight)
+            , (020, trace "Ite" $ Ite <$> genBool <*> genSelf <*> genSelf )
             ]
     let termG = 
-            [ (100, Abstr (Ident varName) <$> body) ] ++
-            [ (100, pickVar validVars) | not (null validVars) ]
+            [ (100, trace "Abstr" $ Abstr (Ident varName) <$> body) ] ++
+            [ (100, trace "pickVar" $ pickVar validVars) | not (null validVars) ]
     let notInFuncG = termG
     let allG = deeperG ++ termG
 
@@ -248,15 +253,15 @@ genOfType' t@(TCoprod a b) = do
     let genB = resize (size - 1) $ genOfType b
 
     let deeperG = 
-            [ (020, App <$> genFunction <*> genArg)
-            , (020, Fst <$> genLeft)
-            , (020, Snd <$> genRight)
-            , (020, Ite <$> genBool <*> genSelf <*> genSelf )
+            [ (020, trace "App" $ App <$> genFunction <*> genArg)
+            , (020, trace "Fst" $ Fst <$> genLeft)
+            , (020, trace "Snd" $ Snd <$> genRight)
+            , (020, trace "Ite" $ Ite <$> genBool <*> genSelf <*> genSelf )
             ]
     let termG = 
-            [ (100, InL <$> genA )
-            , (100, InR <$> genB ) ] ++
-            [ (100, pickVar validVars) | not (null validVars) ]
+            [ (100, trace "InL" $ InL <$> genA )
+            , (100, trace "InR" $ InR <$> genB ) ] ++
+            [ (100, trace "pickVar" $ pickVar validVars) | not (null validVars) ]
     let notInFuncG = termG ++ [(020, App <$> genFunction <*> genArg)]
     let allG = deeperG ++ termG
 

@@ -22,6 +22,7 @@ description: Please see the README on GitHub at <https://github.com/rintse/ranvi
 dependencies:
 - base >= 4.7 && < 5
 - split
+- NoTrace
 - parallel
 - haskore
 - unordered-containers
@@ -65,13 +66,22 @@ library:
   - Syntax.Grammar.ErrM
   - Syntax.Grammar.Print
 
+flags:
+  debug:
+    description: Enable debug printing of generator
+    manual: True
+    default: False
+
+when:
+  - condition: flag(debug)
+    cpp-options:  -DDEBUG
+
 executables:
   ranvid_img:
     main:                Main.hs
     source-dirs:         app_image
     ghc-options:
     - -threaded
-    - -msse4
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:

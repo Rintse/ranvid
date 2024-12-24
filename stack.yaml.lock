@@ -54,6 +54,13 @@ packages:
       size: 7774
   original:
     hackage: haskore-0.2.0.8@sha256:ef242b910c37e87ca5c52c42628adf40d8bf71cbf225686d14a8064012f72b03,6079
+- completed:
+    hackage: NoTrace-0.3.0.4@sha256:453ede924b5c1bde1cf80943f3d5a2acfb5709bd4a0a0e6b9358fd6409ddd584,1298
+    pantry-tree:
+      sha256: cb89d29cabe37f4f0731d78be911756a7c70cc586cd3b10db99be6d1d562ab80
+      size: 264
+  original:
+    hackage: NoTrace-0.3.0.4@sha256:453ede924b5c1bde1cf80943f3d5a2acfb5709bd4a0a0e6b9358fd6409ddd584,1298
 snapshots:
 - completed:
     sha256: 08bd13ce621b41a8f5e51456b38d5b46d7783ce114a50ab604d6bbab0d002146

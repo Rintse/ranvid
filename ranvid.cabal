@@ -29,6 +29,11 @@ custom-setup
     , base
     , process
 
+flag debug
+  description: Enable debug printing of generator
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Eval
@@ -57,6 +62,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       MonadRandom
+    , NoTrace
     , QuickCheck
     , QuickCheck-GenT
     , array
@@ -75,6 +81,8 @@ library
     , split
     , unordered-containers
   default-language: Haskell2010
+  if flag(debug)
+    cpp-options: -DDEBUG
 
 executable ranvid_img
   main-is: Main.hs
@@ -86,9 +94,10 @@ executable ranvid_img
       Paths_ranvid
   hs-source-dirs:
       app_image
-  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -msse4 -rtsopts -with-rtsopts=-N
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
+    , NoTrace
     , QuickCheck
     , QuickCheck-GenT
     , array
@@ -108,6 +117,8 @@ executable ranvid_img
     , split
     , unordered-containers
   default-language: Haskell2010
+  if flag(debug)
+    cpp-options: -DDEBUG
 
 executable ranvid_music
   main-is: Main.hs
@@ -122,6 +133,7 @@ executable ranvid_music
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       MonadRandom
+    , NoTrace
     , QuickCheck
     , QuickCheck-GenT
     , array
@@ -141,3 +153,5 @@ executable ranvid_music
     , split
     , unordered-containers
   default-language: Haskell2010
+  if flag(debug)
+    cpp-options: -DDEBUG
